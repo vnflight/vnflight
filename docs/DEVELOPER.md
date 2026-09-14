@@ -115,6 +115,7 @@ Registration API (all defined in `vnflight.rpy`):
 ## Testing
 
 ```bash
+pip install -r requirements-dev.txt          # pytest, plus mcp for the MCP tests
 python -m pytest tests -q                    # unit tests, about ten minutes
 ```
 

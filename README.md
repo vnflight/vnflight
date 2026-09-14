@@ -14,7 +14,7 @@ The project was developed mostly with the help of local and frontier AI models.
 
 # Quick Install
 
-Requirements: Python 3.10+, a locally installed Ren'Py game, and a command that starts it. A built game (Steam, GOG, itch) starts from its own executable; a game distributed as a Ren'Py project, such as the two sample games ([Mystic Cafe](https://github.com/vnflight/mystic_cafe), [Echoes of Tomorrow](https://github.com/vnflight/echoes_of_tomorrow)), needs a Ren'Py SDK from [renpy.org](https://www.renpy.org/latest.html) and starts as `<sdk>/renpy.exe <project dir>`. The `mcp` package is only needed for MCP mode (`pip install mcp`, tested with mcp 1.26).
+Requirements: Python 3.10+, a locally installed Ren'Py game, and a command that starts it. A built game (Steam, GOG, itch) starts from its own executable; a game distributed as a Ren'Py project, such as the two sample games ([Mystic Cafe](https://github.com/vnflight/mystic_cafe), [Echoes of Tomorrow](https://github.com/vnflight/echoes_of_tomorrow)), needs a Ren'Py SDK from [renpy.org](https://www.renpy.org/latest.html) and starts as `<sdk>/renpy.exe <project dir>`. The CLI and the bridge need no third-party packages; MCP mode needs the `mcp` package (`pip install -r requirements.txt`, tested with mcp 1.26).
 
 ```bash
 cp vnflight.default.json vnflight.json      # then add your game under "games"

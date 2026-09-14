@@ -1,0 +1,3 @@
+# vnflight has no required third-party packages: the CLI and the bridge run on
+# the standard library.  MCP mode (`vnflight.py mcp`) needs the mcp package.
+mcp>=1.26
