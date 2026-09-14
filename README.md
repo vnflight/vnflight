@@ -8,7 +8,9 @@
 
 The project exists to explore how AI agents play visual novels and handle branching narrative choices. It can also be used for QA of Ren'Py games.
 
-The shim runs on Ren'Py 6 through 8 (Python 2 and 3 engines). Adapters (the CLI flags call them mods) are unofficial compatibility files, not affiliated with or endorsed by the games' creators, and live in the separate [mods repository](https://github.com/vnflight/mods) (see [Adapters](docs/USER.md#adapters-mods)).
+The bridge runs locally by default. A connected AI client may send the story text and screenshots it receives to its model provider; that depends on the client and its configuration.
+
+The shim targets Ren'Py 6 through 8 (Python 2 and 3 engines). Adapters (the CLI flags call them mods) are executable Python compatibility code that runs inside the game; install only adapters you trust. They live in the separate [mods repository](https://github.com/vnflight/mods) (see [Adapters](docs/USER.md#adapters-mods)).
 
 The project was developed mostly with the help of local and frontier AI models.
 
@@ -19,8 +21,8 @@ Requirements: Python 3.10+, a locally installed Ren'Py game, and a command that 
 ```bash
 cp vnflight.default.json vnflight.json      # then add your game under "games"
 python dist/vnflight.py games                     # confirms the config is readable
-python dist/vnflight.py install-shim my_game      # copies vnflight.rpy (+ adapters) into <game>/game/
 python dist/vnflight.py fetch-mods --output mods  # optional: the tested adapter snapshot; then set "mods_manifest": "mods/manifest.json"
+python dist/vnflight.py install-shim my_game      # after configuring adapters; copies vnflight.rpy (+ adapters) into <game>/game/
 ```
 
 A minimal game entry in `vnflight.json`:
@@ -59,7 +61,7 @@ The release assets are the same three files as the clone's essentials (`vnflight
 
 # Supported games
 
-Every Ren'Py game runs with the shim installed; games with image-only buttons or custom screens need an adapter from the [mods repository](https://github.com/vnflight/mods) to be playable. Games the project has been played through with:
+Compatibility depends on the game and engine version. Image-only buttons or custom screens may need an adapter from the [mods repository](https://github.com/vnflight/mods). The following games and engine versions have been played through with vnflight:
 
 | Game | Ren'Py | Adapter needed |
 |---|---|---|

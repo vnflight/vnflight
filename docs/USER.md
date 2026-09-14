@@ -1,6 +1,6 @@
 # User guide
 
-Everything runs from the single-file `vnflight.py`: `dist/vnflight.py` in a clone of the repository, or `vnflight.py` in a flat release folder that holds the three release files. It reads `vnflight.json` from the project root (the clone root, or the flat folder) to find games and timing profiles, and it starts the bridge for you when you launch a game. This guide covers the config file, installing the shim, the CLI essentials (the full verb list is in [CLI.md](CLI.md)), the MCP server, profiles, adapters, save safety, and troubleshooting.
+Everything runs from the single-file `vnflight.py`: `dist/vnflight.py` in a clone of the repository, or `vnflight.py` in a flat release folder that holds the three release files. It reads `vnflight.json` from the project root (the clone root, or the flat folder) to find games and timing profiles, and it starts the bridge for you when you launch a game. This guide covers the config file, installing the shim, the CLI essentials (the full verb list is in [CLI.md](CLI.md)), the MCP server, profiles, adapters, save compatibility, removal, and troubleshooting.
 
 ## The config file
 
@@ -82,6 +82,8 @@ Every other verb (navigation such as `back`, `advance`, `rewind`; setup such as 
 
 ## MCP server
 
+The bridge runs locally by default. The connected AI client may send story text and screenshots to its model provider, depending on its configuration. Choose the client and model setup with that data flow in mind.
+
 ```bash
 python dist/vnflight.py mcp --game my_game
 ```
@@ -110,6 +112,8 @@ The MCP tools and the CLI verbs share one implementation, so their results and r
 Profiles in `vnflight.json` bundle the shim's delays: auto-advance and post-action delays, click timing, reading speed, and whether the user can still click (`allow_user_override`). The defaults are `turbo` (fast, the user can intervene), `external` (fastest, user clicks blocked) and `hybrid` (slower, watchable). Apply one with `set --profile turbo` or the `set_profile` tool; `default_profile` in the game entry applies one automatically at launch.
 
 ## Adapters (mods)
+
+Adapters contain executable Python code that runs inside the game process, with the game's access to your computer. Review unfamiliar adapters and install only code from sources you trust. Hash verification checks file integrity; it does not establish that the code is safe.
 
 To download a snapshot instead of cloning the adapter repository ([vnflight/mods](https://github.com/vnflight/mods)):
 
@@ -160,7 +164,7 @@ A game entry can also map its adapters itself, and that list wins as written:
 
 `source` is absolute or relative to `vnflight.py`; `target` is the file name inside the game's `game/` directory and must start with `vnf_` so the installer never overwrites a game file. An empty `mods` list means no adapters, whatever the manifest says. Writing a mod is covered in the developer guide.
 
-## Save safety
+## Save compatibility
 
 Ren'Py saves can pickle references to the shim's objects. Before sharing a save, or before uninstalling the shim, scan it:
 
@@ -168,7 +172,18 @@ Ren'Py saves can pickle references to the shim's objects. Before sharing a save,
 python dist/vnflight.py save-scan path/to/save-or-directory --recursive
 ```
 
-The scan is read-only and reports likely `vnflight`/`vnf_` references. A clean result is a good sign, not a proof.
+The scan searches save-file bytes for likely shim-related references, including `vnflight`, `vnf_`, and legacy names. It reports matches without loading the save into Ren'Py or modifying it. Matches can help identify saves that may depend on the shim; no matches does not guarantee that a save will load after removal.
+
+## Removing the shim and adapters
+
+Stop the game and back up its saves first. Use `save-scan` above to check for likely shim dependencies before removal.
+
+1. Remove the installed `game/vnflight.rpy` and its compiled `game/vnflight.rpyc`, if present.
+2. Remove each adapter file installed by vnflight (the `target` names in your configuration or manifest), along with its corresponding `.rpyc`. Remove only the files you installed for vnflight.
+3. Clear the generated `.rpyb` files in `game/cache/` so Ren'Py rebuilds its bytecode cache on the next launch.
+4. Remove `game/vnflight_launch.json` and any other `vnflight_*` files in `game/` (the launch file's `.lock`, `vnflight_registration_*.json` receipts, `vnflight_anomalies.log`, debug logs), then launch the game normally through its executable or store launcher.
+
+Changing the adapter configuration or using `install-shim --no-mods` does not uninstall previously copied adapters. Keep the backup and restore the same shim/adapters if a save depends on them.
 
 ## Troubleshooting
 

@@ -38,7 +38,7 @@ Here is a list of all available commands and their explanation. Global options g
 - `prompt <game>`\
   Print a system prompt for an agent that will play this game through the CLI.
 - `mcp [--game GAME] [--slot SLOT] [--bridge URL] [--token TOKEN] [--capabilities LIST] [--tools LIST]`\
-  Start the MCP server on stdio. `--capabilities` is `play` (default), `lifecycle`, `diagnostic`, `admin` or `all`; `--tools` is an exact allowlist within those. Without `--bridge` the server starts and owns a bridge of its own.
+  Start the MCP server on stdio. `--capabilities` is `play` (default), `lifecycle`, `diagnostic`, `admin` or `all`; `--tools` is an exact allowlist within those. This CLI command connects to the shared bridge at `http://127.0.0.1:8385` by default. Pass `--bridge URL` to connect to another bridge.
 - `bridge [--host HOST] [--port PORT] [--token TOKEN] [--require-token]`\
   Run a standalone bridge and block until stopped.
 
@@ -97,4 +97,4 @@ Here is a list of all available commands and their explanation. Global options g
 - `inspect [--focus] [--verify]`\
   Raw screens, focus list and widgets; `--focus` shows only the clickable list, `--verify` cross-checks scraped buttons against it.
 - `save-scan <path> [--recursive]`\
-  Read-only scan of `.save` files for references to shim code, before sharing a save or uninstalling the shim.
+  Read-only scan of `.save` files for likely shim-related references, to help assess compatibility before sharing a save or uninstalling the shim. It reports matches without loading the save into Ren'Py or modifying it.
