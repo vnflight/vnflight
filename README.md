@@ -36,16 +36,16 @@ Games started by Steam, GOG Galaxy or another launcher need `install-shim my_gam
 
 # Supported games
 
-Every Ren'Py game runs with the shim installed; games with image-only buttons or custom screens need an adapter to be playable. Games the project has been played through with:
+Every Ren'Py game runs with the shim installed; games with image-only buttons or custom screens need an adapter from the [mods repository](https://github.com/vnflight/mods) to be playable. Games the project has been played through with:
 
 | Game | Ren'Py | Adapter needed |
 |---|---|---|
-| Slay the Princess | 8.0 | No, runs unmodded |
+| Slay the Princess | 8.0 | No |
 | Doki Doki Literature Club | 6.99 | No |
-| Roadwarden | 7.5 | Yes, in the mods repository |
-| Long Live the Queen | 8.5 | Yes, in the mods repository |
-| [Mystic Cafe](https://github.com/vnflight/mystic_cafe) (sample game) | 8.5 | Yes, shipped |
-| [Echoes of Tomorrow](https://github.com/vnflight/echoes_of_tomorrow) (sample game) | 8.5 and 7.5 | Yes, shipped |
+| Roadwarden | 7.5 | Yes |
+| Long Live the Queen | 8.5 | Yes |
+| [Mystic Cafe](https://github.com/vnflight/mystic_cafe) | 8.5 | No |
+| [Echoes of Tomorrow](https://github.com/vnflight/echoes_of_tomorrow) | 8.5 and 7.5 | Yes |
 
 # Usage
 
