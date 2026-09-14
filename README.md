@@ -1,11 +1,9 @@
 <p align="center">
   <img src="docs/vnflight.png" alt="vnflight" width="220">
 </p>
-<p align="center">
-  <a href="https://github.com/vnflight/vnflight/actions/workflows/tests.yml"><img src="https://github.com/vnflight/vnflight/actions/workflows/tests.yml/badge.svg" alt="tests"></a>
-</p>
-
 # Introduction
+
+[![tests](https://github.com/vnflight/vnflight/actions/workflows/tests.yml/badge.svg)](https://github.com/vnflight/vnflight/actions/workflows/tests.yml)
 
 **vnflight** is a shim that lets AI agents (and other clients) play Ren'Py games. The shim scrapes the text on the Ren'Py screen and sends it through a local bridge to a CLI or an MCP server, so an agent can read the story and make choices from text alone. Screenshots are available too, so agents with vision capabilities can look at the screen when text is not enough.
 
