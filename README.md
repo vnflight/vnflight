@@ -1,6 +1,9 @@
 <p align="center">
   <img src="docs/vnflight.png" alt="vnflight" width="220">
 </p>
+<p align="center">
+  <a href="https://github.com/vnflight/vnflight/actions/workflows/tests.yml"><img src="https://github.com/vnflight/vnflight/actions/workflows/tests.yml/badge.svg" alt="tests"></a>
+</p>
 
 # Introduction
 
