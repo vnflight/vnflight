@@ -1,0 +1,135 @@
+{
+  "_comment": "vnflight game configuration. This ships with NO games attached — add your own. Each key under 'games' is a game id you choose. Entries whose key starts with an underscore are DISABLED documentation examples: copy one, remove the leading underscore, and edit the paths. See docs/USER.md (The config file) for every field.",
+  "bridge_script": null,
+  "profiles": {
+    "turbo": {
+      "allow_user_override": true,
+      "turbo": true,
+      "auto_advance_delay": 0.05,
+      "post_action_delay": 0.05,
+      "choice_delay_offset_no_scroll": 0.3,
+      "choice_delay_speed_no_scroll": 0.005,
+      "click_delay_offset": 0.1,
+      "click_delay_speed": 0.005,
+      "pre_resolve_step_delay": 0.1,
+      "reading_cps": 200,
+      "scrape_screens_delay": 0.1
+    },
+    "external": {
+      "allow_user_override": false,
+      "fast_forward": true,
+      "auto_advance_delay": 0.05,
+      "post_action_delay": 0.05,
+      "choice_delay_offset_no_scroll": 0.3,
+      "choice_delay_speed_no_scroll": 0.005,
+      "click_delay_offset": 0.1,
+      "click_delay_speed": 0.005,
+      "pre_resolve_step_delay": 0.1,
+      "reading_cps": 200,
+      "scrape_screens_delay": 0.1
+    },
+    "hybrid": {
+      "allow_user_override": true,
+      "fast_forward": false,
+      "turbo": false,
+      "dialogue_advance_mode": "afm",
+      "text_cps": 45,
+      "auto_advance": true,
+      "auto_advance_on_start": true,
+      "auto_advance_delay": 0.3,
+      "post_action_delay": 0.2,
+      "choice_delay_offset_no_scroll": 1.2,
+      "choice_delay_speed_no_scroll": 0.02,
+      "click_delay_offset": 0.3,
+      "click_delay_speed": 0.02,
+      "pre_resolve_step_delay": 0.5,
+      "reading_cps": 35,
+      "scrape_screens_delay": 0.5
+    },
+    "hybrid_text": {
+      "allow_user_override": true,
+      "fast_forward": false,
+      "turbo": false,
+      "dialogue_advance_mode": "text",
+      "text_cps": 45,
+      "post_reveal_hold": 1.0,
+      "auto_advance": true,
+      "auto_advance_on_start": true,
+      "auto_advance_delay": 0.3,
+      "post_action_delay": 0.2,
+      "choice_delay_offset_no_scroll": 1.2,
+      "choice_delay_speed_no_scroll": 0.02,
+      "click_delay_offset": 0.3,
+      "click_delay_speed": 0.02,
+      "reading_cps": 32,
+      "scrape_screens_delay": 0.5
+    },
+    "hybrid_audio": {
+      "allow_user_override": true,
+      "fast_forward": false,
+      "turbo": false,
+      "dialogue_advance_mode": "afm",
+      "text_cps": 45,
+      "auto_advance": true,
+      "auto_advance_on_start": true,
+      "auto_advance_delay": 0.3,
+      "post_action_delay": 0.2,
+      "choice_delay_offset_no_scroll": 1.2,
+      "choice_delay_speed_no_scroll": 0.02,
+      "click_delay_offset": 0.3,
+      "click_delay_speed": 0.02,
+      "reading_cps": 35,
+      "scrape_screens_delay": 0.5
+    }
+  },
+  "_mods_manifest_comment": "Optional. Path to a mods repository's manifest.json (absolute, or relative to this file; never a URL). A game entry WITHOUT a 'mods' key takes its adapters from the manifest entry for its id (or for the id named by its 'adapters' key), verified by sha256. An entry with a 'mods' list uses that list as written; an empty list means no adapters.",
+  "mods_manifest": "path/to/mods/manifest.json",
+  "mods_snapshot": {
+    "_comment": "The adapter snapshot this vnflight release was tested with. Used only by `fetch-mods` when it is run without a URL and --sha256 (it prints both and asks before downloading); nothing fetches it implicitly. Bump url and sha256 together when the mods repository is updated.",
+    "url": "https://raw.githubusercontent.com/vnflight/mods/abbcd6c4c92a276be2b354382cb346e18efa98da/manifest.json",
+    "sha256": "757b8a3bd5906e8fb8f8718e7edcc0249c4f44c8885fa712ac4573acd1d60e1c"
+  },
+  "games": {
+    "_comment": "No games are configured out of the box. Copy an example below, drop the leading underscore, and point the paths at a game you own. See docs/USER.md.",
+    "_example_local_renpy_game": {
+      "_comment": "A locally owned Ren'Py game launched directly through a Ren'Py SDK you supply. 'launch' is the command to start it (SDK executable + game project dir); paths are relative to this vnflight.json (absolute paths also work).",
+      "name": "My Visual Novel",
+      "launch": "path/to/renpy-sdk/renpy.exe path/to/my_game",
+      "briefing": "path/to/my_game/game_briefing.md",
+      "default_profile": "turbo",
+      "mods": []
+    },
+    "_example_sample_game_repo": {
+      "_comment": "Wiring one of the self-made sample games (its own repo). Clone the sample-game repo (e.g. 'echoes_of_tomorrow') and the 'mods' repo, point 'launch' at your Ren'Py SDK + the cloned game dir, and set 'mods_manifest' above to the mods repo's manifest.json: this entry has no 'mods' key, so its adapters come from the manifest entry for its id.",
+      "name": "Echoes of Tomorrow",
+      "launch": "path/to/renpy-sdk/renpy.exe path/to/echoes_of_tomorrow",
+      "briefing": "path/to/echoes_of_tomorrow/game_briefing.md",
+      "default_profile": "hybrid_text",
+      "multi_instance": true
+    },
+    "_example_steam_game": {
+      "_comment": "A commercial game you own on Steam, launched via its store URL. 'game_dir' tells vnflight where the installed game lives so install-shim can patch it; launcher-mediated launches are handled automatically via the launch-file handshake. Compatibility adapters live in the separate mods repo; point mods_manifest at its manifest.json (see docs/USER.md, Mods).",
+      "name": "Doki Doki Literature Club",
+      "launch": "steam://rungameid/698780",
+      "install_shim_flags": [
+        "--always-on"
+      ],
+      "game_dir": "C:/path/to/Steam/steamapps/common/Doki Doki Literature Club"
+    },
+    "_example_gog_game": {
+      "_comment": "A commercial game you own on GOG, launched via GOG Galaxy. See the mods repo README before enabling a commercial-game adapter.",
+      "name": "Roadwarden",
+      "launch": "goggalaxy://launchGame/1763268053",
+      "default_profile": "turbo",
+      "install_shim_flags": [
+        "--always-on"
+      ],
+      "mods": [
+        {
+          "source": "path/to/mods/roadwarden.rpy",
+          "target": "vnf_inventory_stats.rpy"
+        }
+      ]
+    }
+  }
+}
