@@ -489,7 +489,7 @@ init -990 python:
                 "may collide): " + _vnf_text(_tb_module.format_exc()))
             return False
 
-    _VNFLIGHT_SHIM_PROTOCOL_VERSION = 4
+    _VNFLIGHT_SHIM_PROTOCOL_VERSION = 1
 
     def _vnf_record_launch_registration(data, status, reason=None, slot_id=None,
                                         gamedir=None):

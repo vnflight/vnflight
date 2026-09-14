@@ -10804,7 +10804,7 @@ def test_modal_overlay_field_needs_no_protocol_bump():
         | ACTIONABLE_ITEM_FIELDS
     )
     assert not screen_level_keys & validated
-    assert SHIM_PROTOCOL_VERSION == 4
+    assert SHIM_PROTOCOL_VERSION == 1
 
 
 def test_load_handler_treats_renpy8_unfreeze_as_a_successful_load():

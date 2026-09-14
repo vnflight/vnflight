@@ -159,8 +159,8 @@ def fetch_mods_manifest(url, expected_sha256, destination):
 
 
 # Increment only for an incompatible bridge/shim wire-contract change. Both
-# sides refuse a mismatch; this project is pre-release, so there is no legacy
-# protocol branch to maintain.
+# sides refuse a mismatch, and there is no legacy protocol branch: 1 is the
+# first published contract (the pre-release numbering was reset with 0.9).
 #
 # The frozensets below pin ITEM shapes (interactions, buttons, choices) and the
 # choice-request payload. Screen-level event keys — overlay_screens,
@@ -168,7 +168,7 @@ def fetch_mods_manifest(url, expected_sha256, destination):
 # modal_overlay_screens — are deliberately NOT enumerated here: consumers read
 # them with .get() and ignore what they do not know, so a new sibling key is
 # additive and needs no version bump. Adding a field to an item dict does.
-SHIM_PROTOCOL_VERSION = 4
+SHIM_PROTOCOL_VERSION = 1
 
 
 SHIM_INTERACTION_FIELDS = frozenset({
