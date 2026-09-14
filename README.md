@@ -8,7 +8,13 @@
 
 The project exists to explore how AI agents play visual novels and handle branching narrative choices. Practical offshoots are regression smoke tests for Ren'Py games, QA support, and agent-interface research.
 
-The shim runs on Ren'Py 6 through 8 (Python 2 and 3 engines). Every Ren'Py game runs with the shim installed; games with image-only buttons or custom screens need an adapter to be playable. Adapters (the CLI flags call them mods) are unofficial compatibility files, not affiliated with or endorsed by the games' creators, and live in the separate [mods repository](https://github.com/vnflight/mods) (see [Adapters](docs/USER.md#adapters-mods)).
+The shim runs on Ren'Py 6 through 8 (Python 2 and 3 engines). Adapters (the CLI flags call them mods) are unofficial compatibility files, not affiliated with or endorsed by the games' creators, and live in the separate [mods repository](https://github.com/vnflight/mods) (see [Adapters](docs/USER.md#adapters-mods)).
+
+The project was developed mostly with the help of local and frontier AI models.
+
+# Supported games
+
+Every Ren'Py game runs with the shim installed; games with image-only buttons or custom screens need an adapter to be playable. Games the project has been played through with:
 
 | Game | Ren'Py | Adapter needed |
 |---|---|---|
@@ -18,8 +24,6 @@ The shim runs on Ren'Py 6 through 8 (Python 2 and 3 engines). Every Ren'Py game 
 | Long Live the Queen | 8.5 | Yes, in the mods repository |
 | [Mystic Cafe](https://github.com/vnflight/mystic_cafe) (sample game) | 8.5 | Yes, shipped |
 | [Echoes of Tomorrow](https://github.com/vnflight/echoes_of_tomorrow) (sample game) | 8.5 and 7.5 | Yes, shipped |
-
-The project was developed mostly with the help of local and frontier AI models.
 
 # Quick Install
 
