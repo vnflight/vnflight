@@ -765,19 +765,31 @@ DEBUG_SCREEN_NAMES = {
 }
 
 DISABLED_ACTION_NAMES = {"NullAction", "None", "none"}
+# The stock Ren'Py quick menu as the focus fallback reports it.  Q.Load is
+# `QuickLoad()`, which Ren'Py builds as a FileLoad on the quick page, so the
+# scraped action name is "FileLoad"; before it was listed here a quick menu
+# with Q.Load made every wait return at once as "screen_actions", and the
+# opening of a game looked as if it never arrived.
 DEFAULT_FOCUS_CHROME_LABELS = {
     "auto",
     "back",
     "history",
+    "load",
+    "load game",
     "prefs",
     "preferences",
+    "q. load",
+    "q.load",
     "q. save",
     "q.save",
+    "quick load",
+    "quick save",
     "save",
     "save game",
     "skip",
 }
 DEFAULT_FOCUS_CHROME_ACTIONS = {
+    "FileLoad",
     "FileSave",
     "FileTakeScreenshot",
     "QuickLoad",
@@ -33922,9 +33934,38 @@ def _wait_trace(args: argparse.Namespace, event: str, **details: Any) -> None:
     )
 
 
+def _config_warnings(config: Optional[dict], games_dir: Optional[str]) -> list:
+    """One-line warnings about a config that loads but cannot work as is."""
+    warnings: list = []
+    raw = (config or {}).get(MODS_MANIFEST_KEY)
+    if isinstance(raw, str) and raw.strip():
+        root = Path(games_dir) if games_dir else _find_project_root()
+        path = _resolve_manifest_path(config or {}, root)
+        if path is None or not path.exists():
+            warnings.append(
+                f"{MODS_MANIFEST_KEY}: '{raw}' does not exist; point it at an "
+                "adapter manifest.json (fetch-mods downloads one) or remove "
+                "the key. See docs/USER.md, Adapters."
+            )
+    return warnings
+
+
 def cmd_games(args: argparse.Namespace, client_state: ClientState) -> int:
+    config, _config_error = _load_config_with_error(args.games_dir)
+    for warning in _config_warnings(config, args.games_dir):
+        # stderr, so --json stdout stays one object.
+        print(_yellow(f"Warning: {warning}"), file=sys.stderr)
     games = discover_games(args.games_dir)
     if not games:
+        if config is not None:
+            # A config that exists but lists no game (the untouched
+            # template) is a normal first step, not an error.
+            hint = (
+                f'No games configured yet; add one under "games" in '
+                f"{CONFIG_FILENAME} (see README, Quick Install)."
+            )
+            _output(args, _yellow(hint), {"games": [], "hint": hint})
+            return 0
         _output(
             args,
             _red("No games found.") if not args.json else "No games found.",
@@ -37669,6 +37710,12 @@ def cmd_input(args: argparse.Namespace, client_state: ClientState) -> int:
 
     if success:
         _run_after_input_text_hook(HandlerContext(session), _result, text)
+        # The hook polls the bridge and HOLDS any story that answers the
+        # input (a game's opening after the name prompt, an adapter's
+        # answer narration).  Held rows live only in this process, so the
+        # session must be saved again here: saving only before the hook
+        # dropped those rows on exit, and the next `wait` printed nothing.
+        _save_session(session, args, client_state)
         # Suppress input confirmation in quiet mode
         if not getattr(args, "quiet", False):
             _output(

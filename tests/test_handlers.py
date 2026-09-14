@@ -1274,6 +1274,30 @@ def test_wait_does_not_cache_quick_menu_as_actionable_screen(ctx):
     assert ctx.client._last_delivered_actionable_screen_signature == ()
 
 
+def test_wait_does_not_stop_on_a_navigation_only_quick_menu(ctx):
+    """MCP side of the quick-menu rule: Q.Load (a FileLoad from QuickLoad())
+    on the focus fallback is chrome, not a screen decision."""
+    from vnflight.handlers import handle_wait
+    from vnflight.lifecycle import has_actionable_screen_buttons
+
+    screen = {
+        "screens": ["say", "quick_menu"],
+        "buttons": [
+            {"label": "Q.Save", "screen": "_focus_list",
+             "actions": ["FileTakeScreenshot", "FileSave"]},
+            {"label": "Q.Load", "screen": "_focus_list", "actions": ["FileLoad"]},
+            {"label": "Skip", "screen": "_focus_list", "actions": ["Skip"]},
+        ],
+    }
+    assert has_actionable_screen_buttons(screen) is False
+    ctx.client._wait_result = MockWaitResult(events=[], pending=None, screen=screen)
+
+    result = handle_wait(ctx, {"timeout": 0})
+
+    assert result.get("status") != "screen_actions"
+    assert ctx.client._last_delivered_actionable_screen is None
+
+
 def test_terminal_verdict_defers_banner_while_transaction_is_settling(ctx):
     from vnflight.handlers import handle_wait, render_tool_result_text
 

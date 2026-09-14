@@ -12,19 +12,31 @@ DEBUG_SCREEN_NAMES = {
 }
 
 DISABLED_ACTION_NAMES = {"NullAction", "None", "none"}
+# The stock Ren'Py quick menu as the focus fallback reports it.  Q.Load is
+# `QuickLoad()`, which Ren'Py builds as a FileLoad on the quick page, so the
+# scraped action name is "FileLoad"; before it was listed here a quick menu
+# with Q.Load made every wait return at once as "screen_actions", and the
+# opening of a game looked as if it never arrived.
 DEFAULT_FOCUS_CHROME_LABELS = {
     "auto",
     "back",
     "history",
+    "load",
+    "load game",
     "prefs",
     "preferences",
+    "q. load",
+    "q.load",
     "q. save",
     "q.save",
+    "quick load",
+    "quick save",
     "save",
     "save game",
     "skip",
 }
 DEFAULT_FOCUS_CHROME_ACTIONS = {
+    "FileLoad",
     "FileSave",
     "FileTakeScreenshot",
     "QuickLoad",

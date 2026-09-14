@@ -1,11 +1,12 @@
 ## ============================================================================
-## Ren'Py LLM Player — Universal Mod
+## vnflight shim — lets an AI agent (or any bridge client) play this game
 ## ============================================================================
 ##
-## Drop this file into any Ren'Py game's `game/` folder to enable external
-## control via the Bridge Server.
+## `vnflight.py install-shim` copies this file into a Ren'Py game's `game/`
+## folder. It stays inert until the game is started by `vnflight.py launch`
+## (or was installed with --always-on), then talks to the vnflight bridge.
 ##
-## The mod:
+## The shim:
 ##   1. Captures all narrative text (dialogue, narration, scene/show/hide).
 ##   2. Intercepts menu choices and text input.
 ##   3. Communicates with a Bridge Server over HTTP.

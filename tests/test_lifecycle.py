@@ -267,3 +267,41 @@ def test_lifecycle_action_list_disabled_only_when_all_actions_are_noops():
     assert actions_are_disabled(["NullAction", "None"]) is True
     assert actions_are_disabled(["NullAction", "Jump"]) is False
     assert actions_are_disabled([]) is False
+
+
+_STOCK_QUICK_MENU = [
+    {"label": "Back", "screen": "_focus_list", "actions": ["Rollback"]},
+    {"label": "History", "screen": "_focus_list", "actions": ["ShowMenu"]},
+    {"label": "Skip", "screen": "_focus_list", "actions": ["Skip"]},
+    {"label": "Auto", "screen": "_focus_list", "actions": ["ToggleField"]},
+    {"label": "Save", "screen": "_focus_list", "actions": ["ShowMenu"]},
+    {"label": "Q.Save", "screen": "_focus_list", "actions": ["FileTakeScreenshot", "FileSave"]},
+    # QuickLoad() is built as a FileLoad on the quick page.
+    {"label": "Q.Load", "screen": "_focus_list", "actions": ["FileLoad"]},
+    {"label": "Prefs", "screen": "_focus_list", "actions": ["ShowMenu"]},
+]
+
+
+def test_stock_quick_menu_is_chrome_not_a_decision():
+    """A quick menu with Q.Load used to classify as screen_actions, so
+    every wait returned at once while a game's opening was still landing."""
+    from vnflight.lifecycle import has_actionable_screen_buttons
+
+    for button in _STOCK_QUICK_MENU:
+        assert item_is_default_focus_chrome(button), button["label"]
+    screen = {"screens": ["say", "quick_menu"], "buttons": list(_STOCK_QUICK_MENU)}
+    assert has_actionable_screen_buttons(screen) is False
+
+    lifecycle = classify_lifecycle({
+        "status": "running",
+        "context": {"context": "in_game"},
+        "game_state": {"screen_buttons": []},
+        "screen": screen,
+    })
+    assert lifecycle["has_screen_actions"] is False
+    assert lifecycle["effective_status"] != "screen_actions"
+
+    # A real control on the same surface is still a decision.
+    real = dict(screen, buttons=_STOCK_QUICK_MENU + [
+        {"label": "Open the door", "screen": "room", "actions": ["Jump"]}])
+    assert has_actionable_screen_buttons(real) is True

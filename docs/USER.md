@@ -1,10 +1,10 @@
 # User guide
 
-Everything runs from the single-file `vnflight.py`. It reads `vnflight.json` next to it to find games and timing profiles, and it starts the bridge for you when you launch a game. This guide covers the config file, installing the shim, the CLI essentials (the full verb list is in [CLI.md](CLI.md)), the MCP server, profiles, mods, save safety, and troubleshooting.
+Everything runs from the single-file `vnflight.py`. It reads `vnflight.json` next to it to find games and timing profiles, and it starts the bridge for you when you launch a game. This guide covers the config file, installing the shim, the CLI essentials (the full verb list is in [CLI.md](CLI.md)), the MCP server, profiles, adapters, save safety, and troubleshooting.
 
 ## The config file
 
-Copy `vnflight.default.json` to `vnflight.json`. The file has two top-level sections, `profiles` and `games`, plus an optional `mods_manifest` (see Mods). A game entry:
+Copy `vnflight.default.json` to `vnflight.json`. The file has two top-level sections, `profiles` and `games`, plus an optional `mods_manifest` (see Adapters). A game entry:
 
 ```json
 "my_game": {
@@ -22,25 +22,25 @@ Copy `vnflight.default.json` to `vnflight.json`. The file has two top-level sect
 - `launch` is the command that starts the game: a Ren'Py SDK plus a project path, a game executable, or a Steam URL (`steam://rungameid/<appid>`). `steam_appid` / `gog_gameid` help vnflight find the running process for launcher games.
 - `default_profile` is applied right after launch (see Timing profiles).
 - `briefing` (a file path) or `briefing_text` (inline) is an optional spoiler-free text shown by `vnflight.py info <game>` and included in `vnflight.py prompt`.
-- `mods` lists game-specific adapters to install alongside the shim; leave the key out to take them from the mods manifest instead (see Mods).
+- `mods` lists the game's adapters to install alongside the shim; leave the key out to take them from the adapter manifest instead (see Adapters).
 - `always_on` records that the shim should be installed with `--always-on` (see below).
 - `debug` turns on the shim's command/action log for that game; `debug_logs` is the directory the logs go to. Both are off by default and can be overridden per launch with `launch --debug` / `--no-debug`.
 
 ## Installing the shim
 
 ```bash
-python vnflight.py install-shim my_game              # shim + the game's mods
+python vnflight.py install-shim my_game              # shim + the game's adapters
 python vnflight.py install-shim my_game --always-on  # for Steam/GOG/launcher games
 python vnflight.py install-shim my_game --no-mods    # core shim only
 ```
 
-This copies `vnflight.rpy` (and each configured mod, under a `vnf_*.rpy` name) into the game's `game/` directory. It asks for confirmation; the global `--yes` (before the verb: `python vnflight.py --yes install-shim my_game`) skips the prompt. A target without a `game/` directory is refused, since that almost always means the path in `vnflight.json` is wrong; `--create-game-dir` overrides that for a game laid out differently. Relative paths in a game's `launch` are resolved against `vnflight.json`, never against the directory you run the command from. `install-shim` always prints text, even with `--json`.
+This copies `vnflight.rpy` (and each configured adapter, under a `vnf_*.rpy` name) into the game's `game/` directory. It asks for confirmation; the global `--yes` (before the verb: `python vnflight.py --yes install-shim my_game`) skips the prompt. A target without a `game/` directory is refused, since that almost always means the path in `vnflight.json` is wrong; `--create-game-dir` overrides that for a game laid out differently. Relative paths in a game's `launch` are resolved against `vnflight.json`, never against the directory you run the command from. `install-shim` always prints text, even with `--json`.
 
 The installed shim is inert during normal play. It activates only when the game is started with `VNFLIGHT_ENABLED=1` in its environment, which `vnflight.py launch` sets for games it starts directly, or when it was installed with `--always-on`, which patches the copy to be active unconditionally. Use `--always-on` for games that Steam, GOG Galaxy or another launcher starts, since those never see the launcher's environment.
 
 Separately from activation, every `launch` writes a small handshake file, `game/vnflight_launch.json`, telling that one game which bridge to dial, its slot token and save slot, and whether debug logging is on. The shim reads it at start, claims it, and removes nothing: a fresh file wins over the environment, a stale one (older than 15 minutes) is ignored. You can leave it in place.
 
-Reinstall after every update of `vnflight.rpy` or a mod, then restart the game. `launch` refuses a game whose installed shim no longer matches the source, and says so. On Ren'Py 7 the engine may keep using a compiled copy: delete `game/vnflight.rpyc` and `game/cache/*.rpyb` if the game still behaves like the old shim.
+Reinstall after every update of `vnflight.rpy` or an adapter, then restart the game. `launch` refuses a game whose installed shim no longer matches the source, and says so. On Ren'Py 7 the engine may keep using a compiled copy: delete `game/vnflight.rpyc` and `game/cache/*.rpyb` if the game still behaves like the old shim.
 
 ## CLI
 
@@ -96,9 +96,9 @@ The MCP tools and the CLI verbs share one implementation, so their results and r
 
 Profiles in `vnflight.json` bundle the shim's delays: auto-advance and post-action delays, click timing, reading speed, and whether the user can still click (`allow_user_override`). The defaults are `turbo` (fast, the user can intervene), `external` (fastest, user clicks blocked) and `hybrid` (slower, watchable). Apply one with `set --profile turbo` or the `set_profile` tool; `default_profile` in the game entry applies one automatically at launch.
 
-## Mods
+## Adapters (mods)
 
-To download a snapshot instead of cloning the mods repository:
+To download a snapshot instead of cloning the adapter repository ([vnflight/mods](https://github.com/vnflight/mods)):
 
 ```text
 python vnflight.py fetch-mods --output path/to/mods-snapshot
@@ -129,9 +129,9 @@ Set `mods_manifest` to the returned local manifest path, then run
 `install-shim`. Fetch updates into a new directory and switch configuration
 explicitly after stopping the affected games. Observation tools never fetch.
 
-Some games cannot be read from the generic scrape: buttons drawn as images, custom inventory or stat screens, modal panels that replace the scene, progress that only exists in game variables. A mod is a small Ren'Py file that teaches the shim about one game: it names buttons, filters noise, exposes stats and inventory, registers overlay screens and adds game-specific commands. Mods are unofficial compatibility adapters. They are not affiliated with or endorsed by the game's creators, they contain no game assets, and they only make a locally owned copy easier to read for an agent.
+Some games cannot be read from the generic scrape: buttons drawn as images, custom inventory or stat screens, modal panels that replace the scene, progress that only exists in game variables. An adapter is a small Ren'Py file that teaches the shim about one game: it names buttons, filters noise, exposes stats and inventory, registers overlay screens and adds game-specific commands. The config keys and CLI flags call them mods (`mods`, `mods_manifest`, `--no-mods`, `fetch-mods`); the two words mean the same file. Adapters are unofficial compatibility layers: not affiliated with or endorsed by the game's creators, they contain no game assets, and they only make a locally owned copy easier to read for an agent.
 
-Mods are distributed separately, in a mods repository that carries a `manifest.json` listing, per game id, its adapter files, their install names and a sha256 hash of each. Point the config at it once, outside the games list:
+Adapters are distributed separately, in the adapter repository, which carries a `manifest.json` listing, per game id, its adapter files, their install names and a sha256 hash of each. Point the config at it once, outside the games list:
 
 ```json
 "mods_manifest": "C:/path/to/mods/manifest.json"

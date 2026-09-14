@@ -4781,18 +4781,25 @@ def test_quick_menu_file_actions_are_navigation_not_numbered_buttons():
     """Mystic Cafe's "Q.Load" (FileLoad on the quick menu) arrives from the
     focus-list scrape with screen "_focus_list", so the quick_menu screen
     rule never saw it and it was numbered under OTHER BUTTONS on every
-    read.  Slot buttons on the load screen keep their own category."""
+    read.  It is stock quick-menu chrome like Q.Save beside it: hidden from
+    the button list (the `load` verb is the way to load), never a decision.
+    Slot buttons on the load screen keep their own category."""
     from vnflight.format import _categorize_button
 
     quick = {"label": "Q.Load", "screen": "_focus_list", "actions": ["FileLoad"]}
-    assert _categorize_button(quick) == "navigation"
+    assert _categorize_button(quick) is None
+    quick_save_fallback = {"label": "Q.Save", "screen": "_focus_list",
+                           "actions": ["FileTakeScreenshot", "FileSave"]}
+    assert _categorize_button(quick_save_fallback) is None
     quick_save = {"label": "Q.Save", "screen": "quick_menu", "actions": ["FileSave"]}
     assert _categorize_button(quick_save) == "navigation"
     slot = {"label": "1. Empty Slot", "screen": "load", "actions": ["FileLoad"]}
-    assert _categorize_button(slot) != "navigation"
+    assert _categorize_button(slot) not in ("navigation", None)
 
 
 def test_state_button_takes_navigation_from_the_shim_typed_interaction():
+    """A shim-typed nav interaction keeps its category; stock quick-menu
+    chrome (here Q.Load beside it) is not listed at all."""
     from vnflight.format import build_state_data
 
     raw = {
@@ -4804,12 +4811,20 @@ def test_state_button_takes_navigation_from_the_shim_typed_interaction():
                 {"id": "_focus_list:Q.Load", "display_label": "Q.Load",
                  "type": "nav", "source": "button", "screen": "_focus_list",
                  "index": 6, "action_names": ["FileLoad"]},
+                {"id": "hud:Map", "display_label": "Map",
+                 "type": "nav", "source": "button", "screen": "hud",
+                 "index": 7, "action_names": ["ShowMenu"]},
             ],
             "screen_buttons": [
                 {"label": "Q.Load", "screen": "_focus_list",
                  "actions": ["FileLoad"], "index": 6},
+                {"label": "Map", "screen": "hud",
+                 "actions": ["ShowMenu"], "index": 7},
             ],
         },
     }
     data = build_state_data(raw)
+    labels = [b.get("label") for b in data["buttons"]]
+    assert "Q.Load" not in labels
+    assert labels == ["Map"]
     assert data["buttons"][0]["_category"] == "navigation"

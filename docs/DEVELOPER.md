@@ -15,7 +15,7 @@ Game (Ren'Py)            Bridge (HTTP, localhost:8385)        Clients
 - **Bridge.** A stateful HTTP server. It keeps the transcript, the current pending request (the menu or input the game is waiting on), the latest stats/inventory/progress, and per-slot command queues. Clients read events from a cursor and submit commands with a nonce; the bridge matches the shim's `command_result` back to the nonce. A bridge can host several games at once, one **slot** each; slots are addressed by id or game_id and can be reserved with a token.
 - **Clients.** The CLI and the MCP server are thin: both call the same handlers, which turn "act on choice 2" into a command, wait for the result, settle on the next story state, and format it. A refusal from the shim (`rollback_disabled_by_game`, `nothing_to_close`, a stale surface) travels back unchanged.
 
-Protocol version is `SHIM_PROTOCOL_VERSION = 4` (`src/vnflight/shim_schema.py`, mirrored as `_VNFLIGHT_SHIM_PROTOCOL_VERSION` in the shim); the bridge records the version each shim reports. <!-- TODO: verify what the bridge does on a version mismatch (reject vs. warn) -->
+Protocol version is `SHIM_PROTOCOL_VERSION = 4` (`src/vnflight/shim_schema.py`, mirrored as `_VNFLIGHT_SHIM_PROTOCOL_VERSION` in the shim). Every shim request carries it in the `X-VNFlight-Shim-Protocol` header, and the bridge rejects a mismatch outright: HTTP 409 with `reason: shim_protocol_mismatch`, the expected and received numbers, and the remediation (`install-shim`, then restart the game and the bridge). Nothing is merely warned about; a stale shim never gets to talk.
 
 ## The single-file build
 
@@ -26,6 +26,8 @@ python build_vnflight.py --output vnflight.py
 ```
 
 Never edit `vnflight.py` by hand; edit `src/vnflight/` and rebuild. `vnflight.rpy` is hand-written and is the single source of the shim.
+
+The client-side rules for which story rows an action owns (observed, held, claimed, recorded, acknowledged) and their invariants are documented in the module docstring of `src/vnflight/delivery_ownership.py`, next to the code that enforces them.
 
 Modules under `src/vnflight/`:
 
@@ -60,13 +62,18 @@ init -989 python:
 
     # Rewrite scraped screen data: rename buttons, drop noise.  Each entry
     # is a per-screen dict with "_tag", "texts", "choices" and "buttons".
+    # A button dict carries "label", "actions" (action class names),
+    # "action_strs" (their repr), "is_disabled", "is_selected" and
+    # "is_return"; there is no image-name key, so an image-only button
+    # shows up as label "[unlabelled]" and is told apart by its action.
     def _my_transform(per_screen):
         for scr in per_screen:
             if scr.get("_tag") != "map_screen":
                 continue
             for btn in scr.get("buttons", []):
-                if btn.get("label") == "?":          # an unlabelled image button
-                    btn["label"] = "Map"             # <!-- TODO: verify the key that carries the image name -->
+                if (btn.get("label") == "[unlabelled]"
+                        and any("map" in s for s in btn.get("action_strs", []))):
+                    btn["label"] = "Map"
         return per_screen
     _vnf_add_screen_transform(_my_transform, priority=10)   # lower runs first
 

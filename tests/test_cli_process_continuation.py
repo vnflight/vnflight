@@ -138,24 +138,37 @@ def test_act_then_fresh_explicit_wait_preserves_intervening_story(
                 for _ in range(500):
                     command = game.consume_command()
                     if command:
-                        resolve(command)
+                        # The story row lands BEFORE the command result.  The
+                        # earlier order (result, then dialogue) raced the act's
+                        # settle window: when the CLI read the result with no
+                        # story behind it yet, it correctly answered "accepted,
+                        # still settling" and the dialogue reached the next
+                        # wait instead, which this test does not model.  A
+                        # real shim also publishes the row before it confirms
+                        # the action that produced it.
                         game.push_event({"type": "dialogue", "character": "Elara",
                                          "text": "What is it?"})
+                        resolve(command)
                         return
                     time.sleep(0.01)
 
             responder = threading.Thread(target=respond, daemon=True)
             responder.start()
-            # The budget only bounds the failure case: the responder answers
-            # as soon as the command lands, so a generous value costs nothing
-            # on the happy path and keeps a loaded machine from timing out.
-            first = run("act", "1", "--timeout", "15")
-            responder.join(timeout=20)
+            first = run("act", "1", "--timeout", "5")
+            responder.join(timeout=10)
             assert not responder.is_alive()
-            assert "What is it?" in first
+            # The product contract (act_settle.py): an act returns within its
+            # budget whenever story is still arriving, rendering whatever
+            # has landed, or hands back ("still settling; call wait") and the
+            # next wait continues from the same cursor.  Both are correct;
+            # what must never happen is the row showing twice or not at all.
+            shown_by_act = "What is it?" in first
+            if not shown_by_act:
+                assert "still settling" in first, first
         else:
             run("act", "1", "--no-wait", "--timeout", "5")
             resolve(game.consume_command())
+            shown_by_act = True   # nothing was pushed for act 1 to show
         # These arrive after process 1 exited, so they cannot be in its stash.
         game.push_event({"type": "dialogue", "character": "Marcus",
                          "text": "The grant was extended by eighteen months."})
@@ -166,12 +179,84 @@ def test_act_then_fresh_explicit_wait_preserves_intervening_story(
         output = run("wait", "--timeout", "2")
         assert output.count("The grant was extended by eighteen months.") == 1
         assert output.count("He folds the wrapper.") == 1
-        assert "What is it?" not in output
+        assert output.count("What is it?") == (0 if shown_by_act else 1)
         assert "Ask about Geneva" in output
         repeated = run("wait", "--timeout", "2")
         assert "The grant was extended" not in repeated
         assert "He folds the wrapper" not in repeated
         assert "Ask about Geneva" in repeated
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
+def test_wait_reads_through_a_quick_menu_and_a_later_wait_shows_late_rows(
+    monkeypatch, tmp_path,
+):
+    """Two release-facing facts, seen live on Mystic Cafe's opening:
+
+    1. A surface whose only buttons are the stock quick menu (Q.Load is a
+       FileLoad from QuickLoad()) is not a decision: `wait` keeps reading
+       until its timeout instead of returning at once.
+    2. Rows that land after a wait has returned are rendered, once, by the
+       next wait: nothing an earlier wait did not print is ever skipped.
+    """
+    monkeypatch.chdir(tmp_path)
+    manager = bridge.SlotManager(admin_token="test-only", require_token=False)
+    monkeypatch.setattr(bridge, "slots", manager)
+    slot = manager.assign("quick-menu-test")
+    game = manager.get(slot)
+    game.push_event({"type": "game_started", "game": "quick-menu-test"})
+    game.push_event({"type": "context", "context": "in_game",
+                     "available_commands": ["save", "load", "quit"]})
+    game.push_event({
+        "type": "screen_content", "screens": ["say", "quick_menu"],
+        "texts": [], "buttons": [
+            {"label": "Q.Save", "screen": "_focus_list",
+             "actions": ["FileTakeScreenshot", "FileSave"], "index": 6},
+            {"label": "Q.Load", "screen": "_focus_list",
+             "actions": ["FileLoad"], "index": 7},
+        ],
+    })
+    server = bridge.ThreadedHTTPServer(("127.0.0.1", 0), bridge.BridgeHandler)
+    server.verbose = False
+    server.allowed_hosts = set()
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    root = Path(__file__).resolve().parents[1]
+    env = dict(os.environ, VNFLIGHT_DATA_DIR=str(tmp_path / "client"),
+               PYTHONPATH=str(root / "src"), PYTHONIOENCODING="utf-8")
+    base = [sys.executable, "-c", "from vnflight.cli import main; raise SystemExit(main())",
+            "--bridge", "http://127.0.0.1:" + str(server.server_port),
+            "--slot", str(slot)]
+
+    def run(*args):
+        result = subprocess.run(base + list(args), env=env, cwd=tmp_path,
+                                capture_output=True, text=True, encoding="utf-8", timeout=40)
+        assert result.returncode == 0, result.stdout + result.stderr
+        return result.stdout
+
+    try:
+        started = time.time()
+        first = run("wait", "--timeout", "3")
+        elapsed = time.time() - started
+        # Not a decision: the wait ran to its timeout (process start-up
+        # adds to the floor, never subtracts from it).
+        assert elapsed >= 2.5, (elapsed, first)
+        assert "Q.Load" not in first or "NAVIGATION" in first
+
+        game.push_event({"type": "dialogue", "character": "Narrator",
+                         "text": "The city felt different tonight."})
+        game.push_event({"type": "dialogue", "character": "Mira",
+                         "text": "I really should have left the office earlier..."})
+        second = run("wait", "--timeout", "2")
+        assert second.count("The city felt different tonight.") == 1
+        assert second.count("I really should have left the office earlier...") == 1
+
+        third = run("wait", "--timeout", "1")
+        assert "The city felt different tonight." not in third
+        assert "office earlier" not in third
     finally:
         server.shutdown()
         server.server_close()

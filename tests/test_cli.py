@@ -2339,6 +2339,50 @@ def test_unknown_command_still_lists_the_valid_ones(capsys):
     assert "games" in choose and "bridge" in choose and "save-scan" in choose
 
 
+def test_games_on_the_untouched_template_exits_zero_with_a_hint(tmp_path, capsys):
+    """README's first step is `games` on a fresh copy of the template; it
+    used to print "No games found." and exit 1."""
+    from pathlib import Path
+    import shutil
+
+    root = tmp_path / "proj"
+    root.mkdir()
+    shutil.copy(Path(cli.__file__).resolve().parents[2] / "vnflight.default.json",
+                root / "vnflight.json")
+
+    rc = cli.cmd_games(Namespace(games_dir=str(root), json=False, quiet=False), FakeClientState())
+
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert 'add one under "games" in vnflight.json' in captured.out
+    # The template's placeholder manifest path is called out by key name.
+    assert "mods_manifest" in captured.err and "path/to/mods/manifest.json" in captured.err
+
+    rc = cli.cmd_games(Namespace(games_dir=str(root), json=True, quiet=False), FakeClientState())
+    assert rc == 0
+    assert json.loads(capsys.readouterr().out)["games"] == []
+
+
+def test_games_warns_once_about_a_missing_manifest_and_not_about_a_real_one(tmp_path, capsys):
+    root, _ = _make_manifest_root(tmp_path)
+    assert cli.cmd_games(Namespace(games_dir=str(root), json=True, quiet=False), FakeClientState()) == 0
+    assert "Warning" not in capsys.readouterr().err
+
+    config = json.loads((root / "vnflight.json").read_text(encoding="utf-8"))
+    config["mods_manifest"] = "nowhere/manifest.json"
+    (root / "vnflight.json").write_text(json.dumps(config), encoding="utf-8")
+    assert cli.cmd_games(Namespace(games_dir=str(root), json=True, quiet=False), FakeClientState()) == 0
+    err = capsys.readouterr().err
+    assert err.count("Warning") == 1 and "mods_manifest: 'nowhere/manifest.json' does not exist" in err
+
+
+def test_games_without_any_config_still_fails(tmp_path, capsys):
+    root = tmp_path / "empty"
+    root.mkdir()
+    assert cli.cmd_games(Namespace(games_dir=str(root), json=False, quiet=False), FakeClientState()) == 1
+    assert "No games found" in capsys.readouterr().out
+
+
 def test_version_flag_prints_the_package_version(capsys):
     from vnflight import __version__
 

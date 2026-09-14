@@ -320,6 +320,13 @@ def test_screen_event_prompt_ignores_default_focus_list_chrome():
                 "screen": "_focus_list",
                 "actions": ["FileTakeScreenshot", "FileSave"],
             },
+            {
+                # QuickLoad() is a FileLoad on the quick page; this one
+                # button used to make every wait return at once.
+                "label": "Q.Load",
+                "screen": "_focus_list",
+                "actions": ["FileLoad"],
+            },
         ],
         "interactions": [
             {
@@ -3857,6 +3864,42 @@ def test_cmd_input_uses_longer_story_grace(monkeypatch):
     assert cli.cmd_input(args, FakeClientState()) == 0
     assert captured["initial_grace"] == 5.0
     assert captured["skip_request_id"] == "name-input"
+
+
+def test_cmd_input_saves_the_story_the_post_input_hook_held(monkeypatch):
+    """Mystic Cafe's opening narration arrives while the post-input hook
+    polls; the hook holds it in _prefetched_events.  The session used to be
+    saved BEFORE the hook ran, so the held rows died with the process and
+    the next `wait` printed only navigation."""
+    saves = []
+
+    class FakeInputSession:
+        last_request_id = "name-input"
+        _prefetched_events = []
+
+        def pending(self):
+            return {"type": "input_request", "id": "name-input",
+                    "prompt": "What is your name?"}
+
+        def input_text(self, text):
+            return {"ok": True, "message": "submitted"}
+
+    def fake_hook(ctx, result, text):
+        ctx.client._prefetched_events.append(
+            {"type": "dialogue", "character": "Narrator",
+             "text": "The city felt different tonight."})
+
+    monkeypatch.setattr(cli, "_make_session", lambda args, state: FakeInputSession())
+    monkeypatch.setattr(cli, "_run_after_input_text_hook", fake_hook)
+    monkeypatch.setattr(
+        cli, "_save_session",
+        lambda session, args, state: saves.append(list(session._prefetched_events)))
+
+    args = Namespace(text=["Mira"], wait=False, timeout=None, json=False, quiet=False)
+    assert cli.cmd_input(args, FakeClientState()) == 0
+
+    assert saves, "the session was never saved"
+    assert saves[-1] and saves[-1][0]["text"] == "The city felt different tonight."
 
 
 def test_cmd_input_auto_confirms_roadwarden_confirm_screen(monkeypatch):

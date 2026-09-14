@@ -28,7 +28,7 @@ Every verb reports the shim's actual result: a refused or unconfirmed command pr
 | `rewind` / `replay` | One step back through Ren'Py rollback, and forward again; refused on games that disable rollback |
 | `history` | Recent transcript |
 | `autoplay` | Turn auto-advance on and watch the story |
-| `progress` | Story progress from a game's progress mod |
+| `progress` | Story progress from a game's progress adapter |
 
 ## Setup
 
@@ -37,7 +37,7 @@ Every verb reports the shim's actual result: a refused or unconfirmed command pr
 | `games` | List the games in `vnflight.json` |
 | `info <game>` | Show the game's spoiler-free briefing |
 | `prompt <game>` | Print a system prompt for an agent playing this game |
-| `install-shim <game>` | Install the shim and mods (`--always-on`, `--no-mods`, `--create-game-dir` for a target without `game/`); always prints text |
+| `install-shim <game>` | Install the shim and the game's adapters (`--always-on`, `--no-mods`, `--create-game-dir` for a target without `game/`); always prints text |
 | `fetch-mods [<https-url> --sha256 <manifest-digest>]` | Download a verified adapter snapshot into `--output <new-directory>`; with no URL and digest it uses the snapshot pinned under `mods_snapshot` in `vnflight.json`, shows it, and asks first (`--yes` skips the question) |
 | `slots` | List the running games on the bridge |
 | `set <key> [value]` | Read or set a runtime config key (for example `auto_skip_single_choice`); `--profile <name>` applies a timing profile |
