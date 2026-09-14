@@ -5,10 +5,11 @@ Code-wise, the project is split into two pieces: `vnflight.rpy`, the shim that r
 ## Architecture
 
 ```text
-Game (Ren'Py)            Bridge (HTTP, localhost:8385)        Clients
-  vnflight.rpy   <--->   vnflight.py bridge            <--->   vnflight.py <verb>   (CLI)
-  + vnf_*.rpy mods        one slot per running game            vnflight.py mcp      (MCP server)
-                                                               your own client
+    Game (Ren'Py)            Bridge (HTTP, localhost:8385)         Clients
+
+    vnflight.rpy     <--->   vnflight.py bridge            <--->   vnflight.py <verb>   (CLI)
+  + vnf_*.rpy mods           (one slot per running game)           vnflight.py mcp      (MCP server)
+                                                                   your own client
 ```
 
 - **Shim.** Installed into `game/`, it hooks Ren'Py's say, menu, input and screen machinery and pushes events to the bridge: `dialogue`, `narration`, `nvl`, `choice_request`, `input_request`, `screen_content`, `stats_update`, `inventory_update`, `progress_change`, `game_started` / `game_resumed` / `game_ended`, `context` (main menu vs in game), `renpy_exception`, and `command_result` for every command it executes. It polls the bridge for commands on a background thread and runs them on the main thread from a screen timer.
