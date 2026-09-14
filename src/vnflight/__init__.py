@@ -3,7 +3,7 @@
 # The one version constant.  cli.py (--version), mcp.py (serverInfo),
 # bridge.py (/status) read it; build_vnflight.py copies this line into the
 # single-file artifact so the two never disagree.
-__version__ = "0.9.1"
+__version__ = "0.9.2"
 
 from .client import BridgeClient, WaitResult
 from .format import (
