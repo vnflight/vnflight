@@ -118,6 +118,41 @@ def test_built_artifact_fetches_verified_snapshot(monkeypatch, tmp_path):
     assert (path.parent / "LICENSE").is_file()
 
 
+def test_fetch_accepts_one_folder_level_and_creates_it(monkeypatch, tmp_path):
+    """The mods repository keeps one folder per game; a file entry may be
+    folder/name.rpy and lands in that folder of the snapshot."""
+    data = b"init python:\n    pass\n"
+    mod = {"file": "echoes_of_tomorrow/echoes_progress.rpy",
+           "target": "vnf_echoes_progress.rpy",
+           "sha256": hashlib.sha256(data).hexdigest()}
+    digest, calls = snapshot(monkeypatch, mod=mod, data=data)
+
+    path = mod_fetch.fetch_mods_manifest("https://example.org/repo/manifest.json", digest,
+                                         tmp_path / "snap")
+
+    assert (tmp_path / "snap" / "echoes_of_tomorrow" / "echoes_progress.rpy").read_bytes() == data
+    assert calls[-1] == "https://example.org/repo/echoes_of_tomorrow/echoes_progress.rpy"
+    result = resolve_game_mods({"mods_manifest": str(path)}, "sample", {}, tmp_path)
+    assert not result.problems
+    assert result.entries[0]["source"] == (tmp_path / "snap" / "echoes_of_tomorrow"
+                                           / "echoes_progress.rpy")
+
+
+@pytest.mark.parametrize("bad", [
+    "../escape.rpy", "a/b/c.rpy", "a\\b.rpy", "/abs/x.rpy", "C:/abs/x.rpy",
+    "./x.rpy", "a/../b.rpy", "a/.hidden.rpy", "folder/", "x.py",
+])
+def test_fetch_refuses_paths_that_are_not_one_plain_folder_level(monkeypatch, tmp_path, bad):
+    data = b"init python:\n    pass\n"
+    mod = {"file": bad, "target": "vnf_x.rpy", "sha256": hashlib.sha256(data).hexdigest()}
+    digest, calls = snapshot(monkeypatch, mod=mod, data=data)
+
+    with pytest.raises(ValueError, match="Adapter file must be"):
+        mod_fetch.fetch_mods_manifest("https://example.org/manifest.json", digest, tmp_path / "out")
+    assert len(calls) == 1          # the manifest only; no adapter downloaded
+    assert not (tmp_path / "out").exists()
+
+
 def test_cli_fetch_output(monkeypatch, tmp_path, capsys):
     from vnflight import cli
     digest, _ = snapshot(monkeypatch)

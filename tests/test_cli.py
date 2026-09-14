@@ -2023,6 +2023,46 @@ def _make_manifest_root(tmp_path, tamper=False):
     return root, game_dir
 
 
+def test_install_shim_installs_adapters_kept_in_per_game_folders(tmp_path, capsys):
+    """The mods repository catalogues adapters as <game>/<file>.rpy; the
+    manifest's `file` carries that folder and install-shim follows it."""
+    import hashlib
+
+    root = tmp_path / "proj"
+    root.mkdir()
+    (root / "vnflight.rpy").write_text("# shim\n", encoding="utf-8")
+    repo = tmp_path / "modsrepo"
+    (repo / "echoes_of_tomorrow").mkdir(parents=True)
+    files = {"echoes_of_tomorrow/echoes_of_tomorrow.rpy": b"# hud\n",
+             "echoes_of_tomorrow/echoes_progress.rpy": b"# progress\n"}
+    for rel, data in files.items():
+        (repo / rel).write_bytes(data)
+    (repo / "manifest.json").write_text(json.dumps({
+        "manifest_version": 1,
+        "games": {"mygame": {"name": "My Game", "mods": [
+            {"file": "echoes_of_tomorrow/echoes_of_tomorrow.rpy",
+             "target": "vnf_inventory_stats.rpy",
+             "sha256": hashlib.sha256(files["echoes_of_tomorrow/echoes_of_tomorrow.rpy"]).hexdigest()},
+            {"file": "echoes_of_tomorrow/echoes_progress.rpy",
+             "target": "vnf_echoes_progress.rpy",
+             "sha256": hashlib.sha256(files["echoes_of_tomorrow/echoes_progress.rpy"]).hexdigest()},
+        ]}},
+    }), encoding="utf-8")
+    game_dir = root / "mygame"
+    (game_dir / "game").mkdir(parents=True)
+    (root / "vnflight.json").write_text(json.dumps({
+        "mods_manifest": str(repo / "manifest.json"),
+        "games": {"mygame": {"game_dir": "mygame"}},
+    }), encoding="utf-8")
+
+    rc = cli.cmd_install_shim(_install_args("mygame", root), FakeClientState())
+
+    assert rc == 0
+    assert (game_dir / "game" / "vnf_inventory_stats.rpy").read_bytes() == b"# hud\n"
+    assert (game_dir / "game" / "vnf_echoes_progress.rpy").read_bytes() == b"# progress\n"
+    assert "Installed shim + 2 mods for 'mygame'" in capsys.readouterr().out
+
+
 def test_install_shim_installs_adapters_from_the_mods_manifest(tmp_path, capsys):
     root, game_dir = _make_manifest_root(tmp_path)
 

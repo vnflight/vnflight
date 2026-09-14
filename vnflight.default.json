@@ -86,8 +86,8 @@
   "mods_manifest": "path/to/mods/manifest.json",
   "mods_snapshot": {
     "_comment": "The adapter snapshot this vnflight release was tested with. Used only by `fetch-mods` when it is run without a URL and --sha256 (it prints both and asks before downloading); nothing fetches it implicitly. Bump url and sha256 together when the mods repository is updated.",
-    "url": "https://raw.githubusercontent.com/vnflight/mods/abbcd6c4c92a276be2b354382cb346e18efa98da/manifest.json",
-    "sha256": "757b8a3bd5906e8fb8f8718e7edcc0249c4f44c8885fa712ac4573acd1d60e1c"
+    "url": "https://raw.githubusercontent.com/vnflight/mods/7444337d6e2a693daf998b9b69033ff6a50c0c63/manifest.json",
+    "sha256": "4f51586f9f2407bdcc718752559f54b65cacfb68d285051b00ca2ba850949c2c"
   },
   "games": {
     "_comment": "No games are configured out of the box. Copy an example below, drop the leading underscore, and point the paths at a game you own. See docs/USER.md.",

@@ -37,6 +37,13 @@ def _mods_download(url, deadline, limit):
                 raise ValueError("Adapter download exceeds size limit")
 
 
+# A manifest `file` entry: a plain .rpy name, or one folder level (the mods
+# repository keeps one folder per game).  No ".", "\" or leading "/" in a
+# segment, so "..", absolute and backslash paths never match.  Shared by
+# fetch-mods (before downloading) and the local resolver (before installing).
+ADAPTER_FILE_RE = re.compile(r"[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)?\.rpy")
+
+
 def _mods_digest(value):
     if not isinstance(value, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", value):
         raise ValueError("A full SHA-256 digest is required")
@@ -71,8 +78,13 @@ def fetch_mods_manifest(url, expected_sha256, destination):
             if not isinstance(mod, dict):
                 raise ValueError("Malformed adapter entry")
             name, target = mod.get("file"), mod.get("target")
-            if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9_-]+\.rpy", name):
-                raise ValueError("Adapter file must be a plain .rpy filename")
+            # A plain name, or one folder level (the mods repository keeps
+            # one folder per game).  The charset excludes ".", "\" and
+            # leading "/", so "..", absolute and backslash paths never match.
+            if not isinstance(name, str) or not ADAPTER_FILE_RE.fullmatch(name):
+                raise ValueError(
+                    "Adapter file must be a plain .rpy filename, optionally "
+                    "inside one folder (folder/name.rpy)")
             if not isinstance(target, str) or not re.fullmatch(r"vnf_[A-Za-z0-9_-]+\.rpy", target):
                 raise ValueError("Adapter target must be a plain vnf_*.rpy filename")
             digest = _mods_digest(mod.get("sha256"))
@@ -93,6 +105,7 @@ def fetch_mods_manifest(url, expected_sha256, destination):
                 raise ValueError("Adapter snapshot exceeds size limit")
             if hashlib.sha256(data).hexdigest() != digest:
                 raise ValueError("Adapter SHA-256 mismatch: " + name)
+            (stage / name).parent.mkdir(parents=True, exist_ok=True)
             (stage / name).write_bytes(data)
         (stage / "manifest.json").write_bytes(raw)
         # Renaming a complete directory prevents exposing a partial snapshot.

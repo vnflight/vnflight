@@ -1910,7 +1910,10 @@ def resolve_game_mods(config: Optional[dict], game_id: str, game_cfg: dict,
         name = mod.get("file")
         target = mod.get("target")
         expected = mod.get("sha256")
-        if not isinstance(name, str) or not name.strip() or "/" in name or "\\" in name:
+        # Same rule as fetch-mods: a plain name or one folder level; never
+        # "..", absolute or backslash paths.
+        from .mod_fetch import ADAPTER_FILE_RE
+        if not isinstance(name, str) or not ADAPTER_FILE_RE.fullmatch(name):
             problems.append(f"manifest entry for {key!r} has an invalid file name: {name!r}")
             continue
         if not isinstance(target, str) or not target.strip():
