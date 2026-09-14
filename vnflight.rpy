@@ -10517,6 +10517,12 @@ init 999 python:
                           "not supported — capturing with GUI visible.")
 
             if hasattr(renpy.exports, "screenshot_to_bytes"):
+                # Before the first frame is drawn, screenshot_to_bytes reads
+                # interface.surftree, which does not exist yet (seen on
+                # Linux at boot): no frame, no capture, no traceback.
+                _iface = getattr(getattr(renpy, "game", None), "interface", None)
+                if _iface is not None and getattr(_iface, "surftree", None) is None:
+                    return
                 raw_bytes = renpy.exports.screenshot_to_bytes(size)
             else:
                 # Ren'Py 6.x fallback: save to temp file, read back.

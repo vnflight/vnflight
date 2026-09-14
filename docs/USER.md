@@ -21,7 +21,7 @@ The file also carries the timing `profiles` and, at the top level, the adapter k
 ### Additional options
 
 - `"launch"`\
-  One of: a Ren'Py SDK plus a project directory (`renpy.exe path/to/game`), a game executable, `steam://rungameid/<appid>`, or `goggalaxy://launchGame/<id>`. Relative paths are relative to `vnflight.json`; for the two store forms the id in the URL is how vnflight finds the installed game and its process.
+  One of: a Ren'Py SDK plus a project directory (`renpy.exe path/to/game`; `renpy.sh` on Linux and macOS), a game executable, `steam://rungameid/<appid>`, or `goggalaxy://launchGame/<id>`. Relative paths are relative to `vnflight.json`; for the two store forms the id in the URL is how vnflight finds the installed game and its process.
 - `"game_dir": "path/to/installed/game"`\
   Where a launcher-started game is installed, so `install-shim` knows which `game/` folder to patch when `launch` is a store URL.
 - `"always_on": true`\
@@ -192,6 +192,16 @@ Changing the adapter configuration or using `install-shim --no-mods` does not un
 - **"Multiple games connected."** Add `--slot <game_id>` (or `--slot latest:<game_id>`) before the verb, or stop the extra game.
 - **"Admin token required" on `stop` or `slots`.** The bridge was started by another process that owns it. Pass `--token` (or set `VNFLIGHT_TOKEN`), or stop it from the process that started it. Tokens are a local convenience, not a security boundary against other users on the machine.
 - **`GAME ERROR` in `state`.** The game raised an exception. `act Ignore` continues past it in most cases; `act Reload` restarts the script; save first if the game allows it.
+- **NixOS: the game dies the moment `launch` returns.** `steam-run` wraps the SDK in bubblewrap with `--die-with-parent`, so the game ends with the CLI process that started it. Launch through a script whose parent outlives the CLI and forwards signals, and point `launch` at that script:
+
+  ```sh
+  #!/bin/sh
+  steam-run "$SDK/renpy.sh" "$@" & child=$!
+  trap 'kill "$child"' TERM INT
+  wait "$child"
+  ```
+
+  A distribution that runs `renpy.sh` directly is unaffected.
 - **Story text seems to repeat or skip.** CLI invocations persist their reading cursors in `.vnflight_state.json` in the per-user vnflight data directory (`%LOCALAPPDATA%\vnflight` on Windows, `~/Library/Application Support/vnflight` on macOS, or `$XDG_DATA_HOME/vnflight`, defaulting to `~/.local/share/vnflight`, on Linux). `VNFLIGHT_DATA_DIR` overrides this directory; `reset` clears the selected bridge's client state. If the directory cannot be created, the CLI falls back to storing state beside the package. MCP sessions keep their own cursor in memory.
 - **MCP tools answer `status: unknown` or `state_unavailable`.** No game is connected to the session: launch one from the CLI first, or give the server `--capabilities play,lifecycle` and call `launch`.
 - **Nothing happens after `act` on a button.** Some buttons open a panel instead of advancing the story; run `state` to see it, then `back` or `back_all`.

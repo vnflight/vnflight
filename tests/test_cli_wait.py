@@ -5817,3 +5817,42 @@ def test_freshen_choice_request_accepts_empty_live_interactions():
         "interactions": [],
         "full_items": [],
     }]
+
+
+def test_cmd_load_without_a_slot_says_it_loaded_the_newest_save(monkeypatch, capsys):
+    """`load` with no slot used to print "Load command for slot 'None'
+    confirmed." (seen on the Linux from-zero run)."""
+
+    class FakeLoadSession:
+        bridge_url = "http://bridge"
+        slot_prefix = ""
+        cursor = 5
+        last_request_id = None
+        last_request_type = None
+        last_choices = None
+        last_actionable_snapshot = None
+        _prefetched_events = []
+        load_nonce = None
+
+        def state(self):
+            return {"event_counter": 5, "pending_request": None}
+
+        def _send_command(self, name, args=None, nonce=None):
+            assert args == {}, "no slot means the shim loads its newest save"
+            self.load_nonce = nonce
+            return True, "accepted"
+
+        def poll(self, timeout=0):
+            return [{"type": "command_result", "command": "load",
+                     "success": True, "nonce": self.load_nonce}]
+
+    monkeypatch.setattr(cli, "_make_session", lambda args, state: FakeLoadSession())
+    monkeypatch.setattr(cli, "_save_session", lambda s, a, st: None)
+    args = Namespace(bridge="http://bridge", json=False, quiet=False,
+                    slot=None, wait=False)
+
+    assert cli.cmd_load(args, object()) == 0
+
+    out = capsys.readouterr().out
+    assert "newest save" in out
+    assert "None" not in out

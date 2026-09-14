@@ -39314,7 +39314,10 @@ def cmd_load(args: argparse.Namespace, client_state: ClientState) -> int:
             return 1
         _output(
             args,
-            _green(f"Load command for slot '{slot}' confirmed."),
+            _green(
+                f"Load command for slot '{slot}' confirmed."
+                if slot else "Load command confirmed: newest save loaded."
+            ),
             {
                 "success": True,
                 "slot": slot,
