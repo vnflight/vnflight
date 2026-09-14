@@ -50,7 +50,7 @@ from typing import Any, Callable, Dict, Iterable, List, NamedTuple, Optional, Pr
 
 
 # Version (copied from src/vnflight/__init__.py by the build)
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 
 
 # ======================================================================
