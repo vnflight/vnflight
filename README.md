@@ -6,24 +6,11 @@
 
 **vnflight** is a shim that lets AI agents (and other clients) play Ren'Py games. The shim scrapes the text on the Ren'Py screen and sends it through a local bridge to a CLI or an MCP server, so an agent can read the story and make choices from text alone. Screenshots are available too, so agents with vision capabilities can look at the screen when text is not enough.
 
-The project exists to explore how AI agents play visual novels and handle branching narrative choices. Practical offshoots are regression smoke tests for Ren'Py games, QA support, and agent-interface research.
+The project exists to explore how AI agents play visual novels and handle branching narrative choices. Practical offshoots are tests for Ren'Py games, QA support, and agent-interface research.
 
 The shim runs on Ren'Py 6 through 8 (Python 2 and 3 engines). Adapters (the CLI flags call them mods) are unofficial compatibility files, not affiliated with or endorsed by the games' creators, and live in the separate [mods repository](https://github.com/vnflight/mods) (see [Adapters](docs/USER.md#adapters-mods)).
 
 The project was developed mostly with the help of local and frontier AI models.
-
-# Supported games
-
-Every Ren'Py game runs with the shim installed; games with image-only buttons or custom screens need an adapter to be playable. Games the project has been played through with:
-
-| Game | Ren'Py | Adapter needed |
-|---|---|---|
-| Slay the Princess | 8.0 | No, runs unmodded |
-| Doki Doki Literature Club | 6.99 | No |
-| Roadwarden | 7.5 | Yes, in the mods repository |
-| Long Live the Queen | 8.5 | Yes, in the mods repository |
-| [Mystic Cafe](https://github.com/vnflight/mystic_cafe) (sample game) | 8.5 | Yes, shipped |
-| [Echoes of Tomorrow](https://github.com/vnflight/echoes_of_tomorrow) (sample game) | 8.5 and 7.5 | Yes, shipped |
 
 # Quick Install
 
@@ -46,6 +33,19 @@ A minimal game entry in `vnflight.json`:
 Games started by Steam, GOG Galaxy or another launcher need `install-shim my_game --always-on`.
 
 `vnflight.py` is a generated single-file build of `src/vnflight/`: to change it, edit the source and run `python build_vnflight.py --output vnflight.py` (see [docs/DEVELOPER.md](docs/DEVELOPER.md)).
+
+# Supported games
+
+Every Ren'Py game runs with the shim installed; games with image-only buttons or custom screens need an adapter to be playable. Games the project has been played through with:
+
+| Game | Ren'Py | Adapter needed |
+|---|---|---|
+| Slay the Princess | 8.0 | No, runs unmodded |
+| Doki Doki Literature Club | 6.99 | No |
+| Roadwarden | 7.5 | Yes, in the mods repository |
+| Long Live the Queen | 8.5 | Yes, in the mods repository |
+| [Mystic Cafe](https://github.com/vnflight/mystic_cafe) (sample game) | 8.5 | Yes, shipped |
+| [Echoes of Tomorrow](https://github.com/vnflight/echoes_of_tomorrow) (sample game) | 8.5 and 7.5 | Yes, shipped |
 
 # Usage
 
