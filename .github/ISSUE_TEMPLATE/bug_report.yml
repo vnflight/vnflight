@@ -1,0 +1,47 @@
+name: Bug report
+description: Something did not work with vnflight
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: vnflight version
+      description: Output of `python vnflight.py --version` (or `python dist/vnflight.py --version` in a clone)
+      placeholder: vnflight 0.9.2
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS, Python and Ren'Py version
+      placeholder: Windows 11, Python 3.12, Ren'Py 8.5.2
+    validations:
+      required: true
+  - type: input
+    id: game
+    attributes:
+      label: Game and how it is started
+      description: The `launch` form (SDK + project, executable, Steam or GOG URL) and whether the shim is always-on
+      placeholder: "Roadwarden via goggalaxy://, always-on shim, adapter from the mods snapshot"
+  - type: dropdown
+    id: client
+    attributes:
+      label: Client
+      options:
+        - CLI
+        - MCP server
+        - Both
+        - Not sure
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+      description: The exact command or tool call, its output, and what you expected instead
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Relevant log lines
+      description: Lines from the game's `log.txt` (and `game/vnflight_anomalies.log` if present), or the CLI output with `--json`
+      render: text

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Adapter for a specific game
+    url: https://github.com/vnflight/mods/issues
+    about: Requests, fixes and removal requests for game adapters belong in the mods repository.
