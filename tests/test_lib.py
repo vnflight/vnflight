@@ -4984,3 +4984,19 @@ def test_launch_subprocess_names_the_missing_executable(tmp_path):
     assert pid is None
     assert "executable not found" in err
     assert str(exe) in err
+
+
+def test_shim_source_path_prefers_the_explicit_root_then_the_code(tmp_path):
+    from vnflight.lib import shim_source_path
+
+    own = tmp_path / "vnflight.rpy"
+    own.write_text("# a project root with its own shim\n", encoding="utf-8")
+    assert shim_source_path(str(tmp_path)) == own
+
+    bare = tmp_path / "config-only"
+    bare.mkdir()
+    code_adjacent = shim_source_path(str(bare))
+    assert code_adjacent.exists()
+    assert code_adjacent.name == "vnflight.rpy"
+    assert code_adjacent.parent != bare
+    assert shim_source_path(None) == code_adjacent

@@ -98,6 +98,7 @@ from .lib import (
     _find_gog_game_path,
     _find_project_root,
     _find_steam_game_path,
+    shim_source_path,
     _get_file_hash,
     _http_request,
     _validated_setting_application_receipt,
@@ -220,9 +221,10 @@ def cmd_install_shim(args: argparse.Namespace, client_state: ClientState) -> int
     always_on = getattr(args, "always_on", False)
     no_mods = getattr(args, "no_mods", False)
 
-    # 1. Locate source shim
+    # 1. Locate source shim: the explicit root's own copy, else the one
+    # that ships next to this code (a --games-dir holding only a config).
     root = Path(games_dir) if games_dir else _find_project_root()
-    source_shim = root / "vnflight.rpy"
+    source_shim = shim_source_path(games_dir)
     if not source_shim.exists():
         print(_red(f"Error: Source shim not found at {source_shim}"))
         return 1

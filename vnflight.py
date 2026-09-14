@@ -6501,7 +6501,7 @@ def shim_status(game_id: str, games_dir: Optional[str] = None) -> dict:
                     "stale": [], "missing": [], "unchecked": [], "files": []}
     try:
         root = Path(games_dir) if games_dir else _find_project_root()
-        source_shim = root / "vnflight.rpy"
+        source_shim = shim_source_path(games_dir)
         if not source_shim.exists():
             result["reason"] = f"source shim not found at {source_shim}"
             return result
@@ -7148,6 +7148,27 @@ def _find_project_root() -> Path:
         if (candidate / "bridge").is_dir():
             return candidate
     return here
+
+
+def shim_source_path(games_dir: Optional[str] = None) -> Path:
+    """The ``vnflight.rpy`` that ships next to this code.
+
+    An explicit ``--games-dir`` that carries its own ``vnflight.rpy`` is a
+    full project root and wins, as before.  A config directory without one
+    (the released layout: ``vnflight.json`` and games somewhere, the code
+    elsewhere) falls back to where the code lives: the directory of the
+    single-file ``vnflight.py``, or the checkout root above ``src/vnflight``.
+    """
+    here = Path(__file__).resolve().parent
+    candidates = []
+    if games_dir:
+        candidates.append(Path(games_dir))
+    candidates += [here, here.parent, here.parent.parent]
+    for candidate in candidates:
+        source = candidate / "vnflight.rpy"
+        if source.exists():
+            return source
+    return (Path(games_dir) if games_dir else _find_project_root()) / "vnflight.rpy"
 
 
 def _load_config_with_error(
@@ -33316,9 +33337,10 @@ def cmd_install_shim(args: argparse.Namespace, client_state: ClientState) -> int
     always_on = getattr(args, "always_on", False)
     no_mods = getattr(args, "no_mods", False)
 
-    # 1. Locate source shim
+    # 1. Locate source shim: the explicit root's own copy, else the one
+    # that ships next to this code (a --games-dir holding only a config).
     root = Path(games_dir) if games_dir else _find_project_root()
-    source_shim = root / "vnflight.rpy"
+    source_shim = shim_source_path(games_dir)
     if not source_shim.exists():
         print(_red(f"Error: Source shim not found at {source_shim}"))
         return 1

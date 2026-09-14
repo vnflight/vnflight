@@ -2391,3 +2391,21 @@ def test_version_flag_prints_the_package_version(capsys):
     assert exc.value.code == 0
     assert capsys.readouterr().out.strip() == f"vnflight {__version__}"
     assert cli.VERSION == __version__
+
+
+def test_install_shim_takes_the_shim_next_to_the_code_when_the_root_has_none(tmp_path, capsys):
+    """A --games-dir that only holds vnflight.json (the released layout:
+    config and games in one place, the code elsewhere) used to fail with
+    "Source shim not found at <games-dir>/vnflight.rpy".  The shim ships
+    next to the code, so that is where it is taken from."""
+    from vnflight.lib import shim_source_path
+
+    root, game_dir = _make_install_root(tmp_path, config=_NO_MODS_CONFIG)
+    (root / "vnflight.rpy").unlink()
+
+    rc = cli.cmd_install_shim(_install_args("mygame", root), FakeClientState())
+
+    assert rc == 0, capsys.readouterr().out
+    installed = (game_dir / "game" / "vnflight.rpy").read_bytes()
+    assert installed == shim_source_path(None).read_bytes()
+    assert b"vnflight" in installed[:4096]
