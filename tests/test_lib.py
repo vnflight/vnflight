@@ -3145,9 +3145,25 @@ def test_mediated_launch_refuses_before_teardown_for_readonly_launch_file(
     from vnflight import lib
 
     install_root = _make_install_root(tmp_path)
-    target = install_root / "game" / lib.LAUNCH_FILE_NAME
+    game_dir = install_root / "game"
+    target = game_dir / lib.LAUNCH_FILE_NAME
     target.write_text("{}", encoding="utf-8")
-    target.chmod(stat.S_IREAD)
+    # What makes the handoff unwritable differs by platform, and so does the
+    # probe: on Windows a read-only target cannot be replaced, on POSIX it
+    # can (rename only needs the directory), so there the directory itself
+    # is made unwritable.
+    if os.name == "nt":
+        target.chmod(stat.S_IREAD)
+
+        def restore():
+            target.chmod(stat.S_IWRITE | stat.S_IREAD)
+    else:
+        if hasattr(os, "geteuid") and os.geteuid() == 0:
+            pytest.skip("directory permissions do not bind root")
+        game_dir.chmod(0o500)
+
+        def restore():
+            game_dir.chmod(0o700)
     launch_calls, run_launch = _make_launch_env(monkeypatch, admin_token="admin-tok")
     monkeypatch.setattr(
         lib, "_find_game_install_path", lambda game_id, games_dir: install_root
@@ -3172,7 +3188,7 @@ def test_mediated_launch_refuses_before_teardown_for_readonly_launch_file(
     try:
         ok, message, slot_id = run_launch()
     finally:
-        target.chmod(stat.S_IWRITE | stat.S_IREAD)
+        restore()
 
     assert ok is False
     assert slot_id is None

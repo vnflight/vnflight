@@ -18,6 +18,7 @@ import argparse
 import base64
 import hashlib
 import ipaddress
+import itertools
 import json
 import math
 import os
@@ -4747,6 +4748,9 @@ class SlotManager:
         self._registration_rejections: "OrderedDict[str, dict[str, Any]]" = (
             OrderedDict()
         )
+        # Recording order, for callers that sort by rejected_at: a coarse
+        # clock (Windows, ~16 ms) stamps back-to-back rejections identically.
+        self._registration_seq = itertools.count(1)
         self._transaction_archive_path = os.path.join(
             self._storage_dir, "transaction_archives.jsonl",
         )
@@ -4845,6 +4849,7 @@ class SlotManager:
         token_hash = self._token_hash(str(token))
         record["reservation_id"] = token_hash[:16]
         record["_token_hash"] = token_hash
+        record["_seq"] = next(self._registration_seq)
         attempt_key = self._registration_attempt_key(
             token_hash, game_id, game_pid, launch_id, retry_mode,
         )
@@ -4931,7 +4936,10 @@ class SlotManager:
             matches.sort(key=lambda item: (
                 item.get("transient") is not True,
                 float(item.get("rejected_at", 0.0) or 0.0),
+                int(item.get("_seq", 0) or 0),
             ), reverse=True)
+            for item in matches:
+                item.pop("_seq", None)
             return matches
 
     def registration_rejection(

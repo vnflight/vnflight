@@ -3330,7 +3330,13 @@ class TestSlotManager:
         )
         assert sm.registration_rejection("token-b") is None
 
-    def test_registration_rejections_are_bounded_per_token(self):
+    def test_registration_rejections_are_bounded_per_token(self, monkeypatch):
+        from vnflight import bridge
+
+        # A coarse clock (Windows on Python 3.10 ticks every ~16 ms) stamps
+        # all three rejections with the same time; order must still be the
+        # order they were recorded in, newest first.
+        monkeypatch.setattr(bridge.time, "time", lambda: 100.0)
         sm = SlotManager()
         sm._MAX_REGISTRATION_REJECTIONS_PER_TOKEN = 2
         for pid in (1, 2, 3):
