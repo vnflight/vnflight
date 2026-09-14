@@ -81,7 +81,7 @@ class TestBuildScript:
             assert result.returncode == 0, (
                 f"build_vnflight.py failed: stderr={result.stderr}"
             )
-            committed = _read_normalized(os.path.join(_root, "vnflight.py"))
+            committed = _read_normalized(os.path.join(_root, "dist", "vnflight.py"))
             built = _read_normalized(out)
             if committed != built:
                 # Show a tight summary; full diff would be 10k+ lines.
@@ -108,13 +108,13 @@ class TestBuildScript:
                 assert False, msg
 
     def test_vnflight_py_exists(self):
-        """Main vnflight.py should exist (either original or built)."""
-        assert os.path.exists(os.path.join(_root, "vnflight.py"))
+        """The committed artifact lives at dist/vnflight.py."""
+        assert os.path.exists(os.path.join(_root, "dist", "vnflight.py"))
 
     def test_vnflight_py_executes_delivery_ownership(self):
         code = (
             "import runpy; "
-            "ns=runpy.run_path('vnflight.py', run_name='artifact_test'); "
+            "ns=runpy.run_path('dist/vnflight.py', run_name='artifact_test'); "
             "c=ns['BridgeClient'].__new__(ns['BridgeClient']); "
             "c._delivered_action_events=set(); "
             "c._delivered_action_event_ownership=set(); "
@@ -130,14 +130,14 @@ class TestBuildScript:
         assert result.returncode == 0, result.stderr
 
     def test_vnflight_py_parses(self):
-        source = open(os.path.join(_root, "vnflight.py"), encoding="utf-8").read()
+        source = open(os.path.join(_root, "dist", "vnflight.py"), encoding="utf-8").read()
         ast.parse(source)
 
     def test_vnflight_py_executes_presentation_merge(self):
         """Stripped package imports must not leave unresolved aliases."""
         code = (
             "import runpy; "
-            "ns=runpy.run_path('vnflight.py', run_name='artifact_test'); "
+            "ns=runpy.run_path('dist/vnflight.py', run_name='artifact_test'); "
             "assert ns['_merge_story_render_sections_by_bridge_sequence']"
             "([], []) == []"
         )
@@ -151,7 +151,7 @@ class TestBuildScript:
         """The built artifact must retain the extracted signature policy."""
         code = (
             "import json, runpy; "
-            "ns=runpy.run_path('vnflight.py', run_name='artifact_test'); "
+            "ns=runpy.run_path('dist/vnflight.py', run_name='artifact_test'); "
             "value=ns['actionable_request_signature']({"
             "'id':'next','reissue_root_request_id':'root',"
             "'type':'choice_request','choices':[{'label':'Continue'}]}); "
@@ -412,6 +412,48 @@ class TestConfigFiles:
         assert checked, "no config template found"
 
 
+class TestArtifactLayouts:
+    """The committed artifact must resolve its project root from both
+    layouts users get: a clone (dist/vnflight.py, shim and config one level
+    up) and the flat release download (all three files in one folder)."""
+
+    def _layout(self, tmp_path, flat):
+        import shutil
+        root = tmp_path / ("flat" if flat else "clone")
+        root.mkdir()
+        target = root / "vnflight.py" if flat else root / "dist" / "vnflight.py"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(os.path.join(_root, "dist", "vnflight.py"), target)
+        shutil.copy(os.path.join(_root, "vnflight.rpy"), root / "vnflight.rpy")
+        game = root / "mygame"
+        (game / "game").mkdir(parents=True)
+        (root / "vnflight.json").write_text(json.dumps({
+            "games": {"mygame": {"name": "My Game", "launch": "renpy.exe mygame",
+                                 "game_dir": "mygame", "mods": []}}}), encoding="utf-8")
+        return root, target, game
+
+    def _run(self, root, target, *args):
+        rel = os.path.relpath(target, root).replace(os.sep, "/")
+        env = dict(os.environ, PYTHONIOENCODING="utf-8",
+                   VNFLIGHT_DATA_DIR=str(root / ".state"))
+        return subprocess.run(
+            [sys.executable, rel, *args], cwd=root, env=env,
+            capture_output=True, text=True, encoding="utf-8", timeout=120)
+
+    @pytest.mark.parametrize("flat", [False, True], ids=["clone-dist", "flat-release"])
+    def test_games_and_install_shim_resolve_the_root(self, tmp_path, flat):
+        root, target, game = self._layout(tmp_path, flat)
+
+        games = self._run(root, target, "games")
+        assert games.returncode == 0, games.stdout + games.stderr
+        assert "mygame" in games.stdout
+
+        install = self._run(root, target, "--yes", "--quiet", "install-shim", "mygame")
+        assert install.returncode == 0, install.stdout + install.stderr
+        assert (game / "game" / "vnflight.rpy").read_bytes() == \
+            (root / "vnflight.rpy").read_bytes()
+
+
 class TestVersionConstant:
     """One version string: src/vnflight/__init__.py.  The build copies it
     into the artifact; nothing else may spell it out."""
@@ -422,7 +464,7 @@ class TestVersionConstant:
             from vnflight import __version__
         finally:
             sys.path.pop(0)
-        text = open(os.path.join(_root, "vnflight.py"), encoding="utf-8").read()
+        text = open(os.path.join(_root, "dist", "vnflight.py"), encoding="utf-8").read()
         found = re.findall(r'^__version__ = "([^"]+)"$', text, re.M)
         assert found == [__version__]
         assert re.fullmatch(r"\d+\.\d+\.\d+", __version__)

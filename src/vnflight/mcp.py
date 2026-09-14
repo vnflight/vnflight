@@ -60,15 +60,17 @@ def unbound_game_error(
     tool: str, game_hint: str | None, active_tool_names,
 ) -> dict:
     """The refusal a game-bound tool returns when no game is running."""
+    from .lib import cli_command_hint
     game = game_hint or "<game>"
+    cli = cli_command_hint()
     if "launch" in set(active_tool_names or ()):
         way_out = (
             f"Call launch(game_id=\"{game}\") first, or run "
-            f"`python vnflight.py launch {game}` and retry."
+            f"`{cli} launch {game}` and retry."
         )
     else:
         way_out = (
-            f"Run `python vnflight.py launch {game}` first and retry, or "
+            f"Run `{cli} launch {game}` first and retry, or "
             "start the server with --capabilities lifecycle (or all) and "
             f"call launch(game_id=\"{game}\")."
         )

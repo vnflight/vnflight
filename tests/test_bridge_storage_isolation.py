@@ -215,7 +215,7 @@ def test_actual_endpoint_refuses_second_owner():
 
 def test_fifteen_bundled_startups_ignore_legacy_corruption(tmp_path):
     """Exercise import AND server startup in separate processes sharing a cwd."""
-    artifact = Path(__file__).resolve().parents[1] / "vnflight.py"
+    artifact = Path(__file__).resolve().parents[1] / "dist" / "vnflight.py"
     legacy = tmp_path / "bridge/logs"
     legacy.mkdir(parents=True)
     journal = legacy / "transactions_old_42.jsonl"

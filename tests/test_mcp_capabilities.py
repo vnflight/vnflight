@@ -1178,7 +1178,8 @@ def test_game_bound_tool_without_a_game_is_refused_with_the_way_out():
     assert err["error"] == "no_game_bound"
     assert err["tool"] == "wait"
     assert "does not launch" in err["message"]
-    assert "python vnflight.py launch mystic_cafe" in err["message"]
+    from vnflight.lib import cli_command_hint
+    assert f"{cli_command_hint()} launch mystic_cafe" in err["message"]
     assert "lifecycle" in err["message"]
 
     with_launch = mcp.unbound_game_error("state", None, {"state", "launch"})

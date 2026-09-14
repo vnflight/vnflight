@@ -372,6 +372,26 @@ def _single_file_artifact() -> Optional[Path]:
     return None
 
 
+def cli_command_hint() -> str:
+    """How to invoke the CLI from a shell, the way the docs spell it.
+
+    Flat release folder: ``python vnflight.py``.  Clone: the artifact lives
+    in dist/, so ``python dist/vnflight.py`` from the repo root.  When the
+    running script is the artifact itself, say its path relative to the
+    current directory.
+    """
+    artifact = _single_file_artifact()
+    if artifact is not None:
+        try:
+            return "python " + artifact.relative_to(Path.cwd().resolve()).as_posix()
+        except ValueError:
+            return "python " + str(artifact)
+    root = _find_project_root()
+    if (root / "dist" / "vnflight.py").exists():
+        return "python dist/vnflight.py"
+    return "python vnflight.py"
+
+
 def default_state_dir() -> str:
     """Directory for the persistent CLI state file.
 
@@ -979,6 +999,21 @@ def _shim_fingerprint(path: Path) -> str:
     return hashlib.sha256(norm.encode("utf-8")).hexdigest()
 
 
+def game_wants_always_on(game_cfg: Optional[dict]) -> bool:
+    """Whether a game entry asks for the always-on shim.
+
+    ``"always_on": true`` is the primary spelling; the older
+    ``"install_shim_flags": ["--always-on"]`` keeps working.  Both
+    install-shim and the stale-shim check go through here, so the two
+    never disagree about what the installed copy should look like.
+    """
+    cfg = game_cfg or {}
+    if cfg.get("always_on") is True:
+        return True
+    flags = cfg.get("install_shim_flags") or []
+    return isinstance(flags, (list, tuple)) and "--always-on" in flags
+
+
 def _expected_fingerprints(source: Path, always_on: bool) -> set:
     """Fingerprints an installed file may legitimately have.
 
@@ -1048,7 +1083,7 @@ def shim_status(game_id: str, games_dir: Optional[str] = None) -> dict:
             result["reason"] = f"game config unreadable ({config_error}); mods not checked"
         else:
             game_cfg = ((config or {}).get("games", {}) or {}).get(game_id, {}) or {}
-            always_on = "--always-on" in (game_cfg.get("install_shim_flags") or [])
+            always_on = game_wants_always_on(game_cfg)
             # One truth for "which adapters belong to this game": the same
             # resolver install-shim uses (explicit list, or the mods-repo
             # manifest).  Hand-edited config: nothing can be assumed to be a
@@ -1127,7 +1162,7 @@ def _shim_refusal(st: dict, game_id: str) -> Optional[str]:
         got = (f["installed"] or "")[:8] or "-"
         exp = (f["expected"] or "")[:8] or "-"
         lines.append(f"    {f['state']:8} {f['name']:24} installed {got}  repo {exp}")
-    lines.append(f"  fix:      python vnflight.py install-shim {game_id}")
+    lines.append(f"  fix:      {cli_command_hint()} install-shim {game_id}")
     lines.append(f"  override: {ALLOW_STALE_SHIM_ENV}=1")
     return chr(10).join(lines)
 
@@ -1144,7 +1179,7 @@ def _shim_note(st: dict, game_id: str) -> Optional[str]:
     if not st.get("checked"):
         reason = st.get("reason") or "reason unknown"
         return (f"WARNING: {game_id} shim NOT verified — {reason}. "
-                f"Proceeding; run `python vnflight.py install-shim {game_id}` "
+                f"Proceeding; run `{cli_command_hint()} install-shim {game_id}` "
                 f"if the game misbehaves.")
     if st.get("unchecked"):
         # str() every item: this formatter runs OUTSIDE shim_status's exception
@@ -1665,13 +1700,21 @@ def _find_project_root() -> Path:
     """Walk up from this script to find the project root."""
     here = Path(__file__).resolve().parent
     candidates = [here, here.parent, here.parent.parent]
-    # A source checkout contains both ``src/bridge`` and the actual project
-    # config one level above ``src``.  Prefer an explicit config across the
-    # whole search range before accepting the legacy bridge-directory marker,
-    # otherwise MCP subprocesses load ``src`` as their root and see no games or
-    # timing profiles.
+    # Three layouts share this code: the flat release (vnflight.py,
+    # vnflight.rpy and vnflight.default.json in one folder), the clone
+    # (the artifact under dist/, the shim and template one level up) and
+    # the package (src/vnflight, two levels below the root).  Prefer an
+    # explicit config across the whole search range, otherwise MCP
+    # subprocesses load ``src`` as their root and see no games or timing
+    # profiles; then the folder that carries the shim or the template, so
+    # a fresh clone resolves its root before vnflight.json exists; then the
+    # legacy bridge-directory marker.
     for candidate in candidates:
         if (candidate / CONFIG_FILENAME).exists():
+            return candidate
+    for candidate in candidates:
+        if (candidate / "vnflight.rpy").exists() or (
+                candidate / "vnflight.default.json").exists():
             return candidate
     for candidate in candidates:
         if (candidate / "bridge").is_dir():
@@ -2741,6 +2784,8 @@ def launch_game(
                 and _self_script.name == "vnflight.py"
             ):
                 bridge_cmd = [sys.executable, str(_self_script), "bridge"]
+            elif (root / "dist" / "vnflight.py").exists():
+                bridge_cmd = [sys.executable, str(root / "dist" / "vnflight.py"), "bridge"]
             elif (root / "vnflight.py").exists():
                 bridge_cmd = [sys.executable, str(root / "vnflight.py"), "bridge"]
             else:
@@ -3511,4 +3556,8 @@ def generate_prompt(game: dict) -> str:
         ]
     )
 
+    # The docs spell the clone command as `python dist/vnflight.py` and
+    # the flat release as `python vnflight.py`; say the one that applies.
+    hint = cli_command_hint()
+    lines = [line.replace("python vnflight.py", hint) for line in lines]
     return "\n".join(lines)

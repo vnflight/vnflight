@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="vnflight.png" alt="vnflight" width="220">
+  <img src="docs/vnflight.png" alt="vnflight" width="220">
 </p>
 
 # Introduction
 
 **vnflight** is a shim that lets AI agents (and other clients) play Ren'Py games. The shim scrapes the text on the Ren'Py screen and sends it through a local bridge to a CLI or an MCP server, so an agent can read the story and make choices from text alone. Screenshots are available too, so agents with vision capabilities can look at the screen when text is not enough.
 
-The project exists to explore how AI agents play visual novels and handle branching narrative choices. Practical offshoots are tests for Ren'Py games, QA support, and agent-interface research.
+The project exists to explore how AI agents play visual novels and handle branching narrative choices. It can also be used for QA of Ren'Py games.
 
 The shim runs on Ren'Py 6 through 8 (Python 2 and 3 engines). Adapters (the CLI flags call them mods) are unofficial compatibility files, not affiliated with or endorsed by the games' creators, and live in the separate [mods repository](https://github.com/vnflight/mods) (see [Adapters](docs/USER.md#adapters-mods)).
 
@@ -18,21 +18,44 @@ Requirements: Python 3.10+, a locally installed Ren'Py game, and a command that 
 
 ```bash
 cp vnflight.default.json vnflight.json      # then add your game under "games"
-python vnflight.py games                     # confirms the config is readable
-python vnflight.py install-shim my_game      # copies vnflight.rpy (+ adapters) into <game>/game/
-python vnflight.py fetch-mods --output mods  # optional: the tested adapter snapshot; then set "mods_manifest": "mods/manifest.json"
+python dist/vnflight.py games                     # confirms the config is readable
+python dist/vnflight.py install-shim my_game      # copies vnflight.rpy (+ adapters) into <game>/game/
+python dist/vnflight.py fetch-mods --output mods  # optional: the tested adapter snapshot; then set "mods_manifest": "mods/manifest.json"
 ```
 
 A minimal game entry in `vnflight.json`:
 
 ```json
-{ "games": { "my_game": { "name": "My Visual Novel",
-                          "launch": "path/to/renpy-sdk/renpy.exe path/to/my_game" } } }
+{ "games": 
+  { "my_game": 
+    { "name": "My Visual Novel",
+      "launch": "path/to/renpy-sdk/renpy.exe path/to/my_game"
+    } 
+  }
+}
 ```
 
-Games started by Steam, GOG Galaxy or another launcher need `install-shim my_game --always-on`.
+A game you own on Steam or GOG is launched through its store URL. Launcher-started games need the always-on shim, because the launcher never passes vnflight's environment to the game:
 
-`vnflight.py` is a generated single-file build of `src/vnflight/`: to change it, edit the source and run `python build_vnflight.py --output vnflight.py` (see [docs/DEVELOPER.md](docs/DEVELOPER.md)).
+```json
+{ "games": 
+  { "slay_the_princess": 
+    { "name": "Slay the Princess",
+      "launch": "steam://rungameid/1989270",
+      "always_on": true
+    },
+    "roadwarden": 
+    { "name": "Roadwarden",
+      "launch": "goggalaxy://launchGame/1763268053",
+      "always_on": true
+    } 
+  }
+}
+```
+
+The release assets are the same three files as the clone's essentials (`vnflight.py`, `vnflight.rpy`, `vnflight.default.json`) and can sit together in one folder; in that layout the commands are simply `python vnflight.py ...`.
+
+`dist/vnflight.py` is a generated single-file build of `src/vnflight/`: to change it, edit the source and run `python build_vnflight.py` (see [docs/DEVELOPER.md](docs/DEVELOPER.md)).
 
 # Supported games
 
@@ -50,40 +73,35 @@ Every Ren'Py game runs with the shim installed; games with image-only buttons or
 # Usage
 
 ```bash
-python vnflight.py launch my_game --wait     # starts the bridge and the game, waits for the menu
-python vnflight.py act Start                 # click a menu button by label
-python vnflight.py input "Mira"              # answer a text prompt, when the game asks for one
-python vnflight.py wait                      # read the story until a choice is needed
-python vnflight.py act 2                     # pick a choice by number (or by label)
-python vnflight.py state                     # footer, stats, inventory, visible buttons
-python vnflight.py stop                      # quit the game and the bridge
+python dist/vnflight.py launch my_game --wait     # starts the bridge and the game, waits for the menu
+python dist/vnflight.py act Start                 # click a menu button by label
+python dist/vnflight.py input "Mira"              # answer a text prompt, when the game asks for one
+python dist/vnflight.py wait                      # read the story until a choice is needed
+python dist/vnflight.py act 2                     # pick a choice by number (or by label)
+python dist/vnflight.py state                     # footer, stats, inventory, visible buttons
+python dist/vnflight.py stop                      # quit the game and the bridge
 ```
 
-For an MCP client, launch the game first (`python vnflight.py launch my_game`), then start `python vnflight.py mcp --game my_game` as a stdio server and point the client at it (see the user guide).
+For an MCP client, launch the game first (`python dist/vnflight.py launch my_game`), then start `python dist/vnflight.py mcp --game my_game` as a stdio server and point the client at it (see the user guide).
 
 # What the agent sees
 
 A real session on the sample game Mystic Cafe, captured through the CLI (`launch mystic_cafe --wait`, `act Start`, `input "Mira"`, then `wait`), trimmed to the last commands:
 
 ```text
-$ python vnflight.py act Start
+$ python dist/vnflight.py act Start
 --- INPUT REQUIRED ---
 What is your name? (default: Alex)
 
-Use input_text('your text') in MCP, or python vnflight.py input "your text" in the CLI.
+Use input_text('your text') in MCP, or python dist/vnflight.py input "your text" in the CLI.
 
-$ python vnflight.py input "Mira"
+$ python dist/vnflight.py input "Mira"
 ✓ Input submitted: "Mira"
 
-$ python vnflight.py wait
+$ python dist/vnflight.py wait
 [Narrator] The city felt different tonight. A thick fog rolled through the narrow streets, muffling the sounds of traffic and turning the streetlights into pale ghosts.
 [Mira] I really should have left the office earlier...
-[Narrator] You pull your coat tighter and glance at your phone. 11:47 PM. The last bus left twenty minutes ago.
-[Mira] Great. Just great.
-[Narrator] As you trudge through the unfamiliar back streets, looking for a shortcut home, something catches your eye.
-[Narrator] A small café, nestled between two ancient brick buildings. A wooden sign swings gently in the breeze.
-[Narrator] "The Mystic Café" — painted in faded gold letters.
-[Narrator] Warm amber light spills from the windows. The scent of fresh coffee and cinnamon drifts through the air.
+...
 [Mira] I've walked this route a hundred times. How have I never noticed this place?
 --- CHOICE REQUIRED ---
   | What do you do?

@@ -1314,10 +1314,11 @@ def format_pending_text(
         default = pending.get("default")
         if default not in (None, ""):
             prompt = f"{prompt} (default: {default})"
+        from .lib import cli_command_hint
         return (
             f"--- INPUT REQUIRED ---\n{prompt}\n\n"
             "Use input_text('your text') in MCP, or "
-            'python vnflight.py input "your text" in the CLI.'
+            f'{cli_command_hint()} input "your text" in the CLI.'
         )
     return f"--- PENDING: {pending['type']} ---"
 

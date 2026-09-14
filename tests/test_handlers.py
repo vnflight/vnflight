@@ -15759,12 +15759,14 @@ def test_cli_invocation_package_mode_targets_repo_vnflight_py():
 
     cmd, cwd = handlers._cli_invocation()
 
-    # Repo checkout: <repo>/vnflight.py exists, so the CLI subprocess must
-    # run it with the repo root as cwd (config + games resolve from there).
+    # Repo checkout: <repo>/dist/vnflight.py exists, so the CLI subprocess
+    # runs it with the REPO ROOT as cwd (config + games resolve from there),
+    # not with dist/.
     assert cmd[0] == _sys.executable
     assert os.path.basename(cmd[1]) == "vnflight.py"
+    assert os.path.basename(os.path.dirname(cmd[1])) == "dist"
     assert os.path.isfile(cmd[1])
-    assert cwd == os.path.dirname(cmd[1])
+    assert cwd == os.path.dirname(os.path.dirname(cmd[1]))
 
 
 def test_cli_invocation_single_file_mode_reinvokes_artifact(monkeypatch, tmp_path):

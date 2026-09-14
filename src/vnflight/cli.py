@@ -109,6 +109,8 @@ from .lib import (
     _load_config_with_error,
     _resolve_manifest_path,
     MODS_MANIFEST_KEY,
+    cli_command_hint,
+    game_wants_always_on,
     pinned_mods_snapshot,
     resolve_game_mods,
     _parse_launch_cmd,
@@ -266,11 +268,12 @@ def cmd_install_shim(args: argparse.Namespace, client_state: ClientState) -> int
     game_cfg = games_cfg.get(config_game_id, {}) if config_game_id else {}
     display_id = config_game_id or game_id
 
-    # Apply per-game default flags from the config entry.
-    for flag in game_cfg.get("install_shim_flags", []):
-        if flag == "--always-on":
-            always_on = True
-        elif flag == "--no-mods":
+    # Apply per-game defaults from the config entry: "always_on": true (or
+    # the older install_shim_flags spelling) and --no-mods.
+    if game_wants_always_on(game_cfg):
+        always_on = True
+    for flag in game_cfg.get("install_shim_flags", []) or []:
+        if flag == "--no-mods":
             no_mods = True
 
     # Handle macOS .app bundles or games containing bundles
@@ -902,8 +905,9 @@ def cmd_games(args: argparse.Namespace, client_state: ClientState) -> int:
             suffix = f"  [{mods}]" if mods and mods != "no adapters" else ""
             print(f"  {_green(g['id']):40s} {desc}{suffix}")
         print()
-        print(f"Use '{_cyan('python vnflight.py info <game>')}' for the full briefing.")
-        print(f"Use '{_cyan('python vnflight.py launch <game>')}' to start playing.")
+        hint = cli_command_hint()
+        print(f"Use '{_cyan(hint + ' info <game>')}' for the full briefing.")
+        print(f"Use '{_cyan(hint + ' launch <game>')}' to start playing.")
     return 0
 
 

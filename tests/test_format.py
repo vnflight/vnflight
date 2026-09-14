@@ -4753,7 +4753,8 @@ def test_input_hint_names_the_documented_cli_invocation():
     from vnflight.format import format_pending_text
 
     text = format_pending_text({"type": "input", "prompt": "What is your name?"})
-    assert 'python vnflight.py input "your text"' in text
+    from vnflight.lib import cli_command_hint
+    assert f'{cli_command_hint()} input "your text"' in text
     assert 'vnflight input "your text" in CLI' not in text
 
 

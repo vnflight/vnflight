@@ -19,13 +19,13 @@ Protocol version is `SHIM_PROTOCOL_VERSION = 4` (`src/vnflight/shim_schema.py`, 
 
 ## The single-file build
 
-`vnflight.py` is a **build artifact**: `src/vnflight/` is bundled into it by
+`dist/vnflight.py` is a **build artifact**: `src/vnflight/` is bundled into it by
 
 ```bash
-python build_vnflight.py --output vnflight.py
+python build_vnflight.py
 ```
 
-Never edit `vnflight.py` by hand; edit `src/vnflight/` and rebuild. `vnflight.rpy` is hand-written and is the single source of the shim.
+Never edit `dist/vnflight.py` by hand; edit `src/vnflight/` and rebuild. `vnflight.rpy` is hand-written and is the single source of the shim.
 
 The client-side rules for which story rows an action owns (observed, held, claimed, recorded, acknowledged) and their invariants are documented in the module docstring of `src/vnflight/delivery_ownership.py`, next to the code that enforces them.
 

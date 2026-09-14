@@ -7,7 +7,9 @@ _root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _src = os.path.join(_root, "src")
 
 # Insert src/ at the front of sys.path so the vnflight *package* is found
-# before the single-file vnflight.py monolith at the project root.
+# first.  The single-file build lives in dist/ (not on sys.path), so it
+# cannot shadow the package; the guards below stay for tests that load
+# the artifact on purpose.
 if _src not in sys.path:
     sys.path.insert(0, _src)
 if _root not in sys.path:

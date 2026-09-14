@@ -2102,6 +2102,24 @@ def test_install_shim_refuses_a_target_without_a_game_dir(tmp_path, capsys):
     assert "--create-game-dir" in out
 
 
+def test_install_shim_honours_always_on_true_in_the_config(tmp_path, capsys):
+    """`"always_on": true` is the documented spelling; only
+    install_shim_flags used to be read."""
+    config = {"games": {"mygame": {"game_dir": "mygame", "mods": [], "always_on": True}}}
+    root, game_dir = _make_install_root(tmp_path, config=config)
+    (root / "vnflight.rpy").write_text(
+        'class P:\n    def __init__(self):\n'
+        '        self.enabled = os.environ.get("VNFLIGHT_ENABLED") == "1"\n',
+        encoding="utf-8")
+
+    rc = cli.cmd_install_shim(_install_args("mygame", root), FakeClientState())
+
+    assert rc == 0
+    installed = (game_dir / "game" / "vnflight.rpy").read_text(encoding="utf-8")
+    assert "self.enabled = True  # patched by install-shim --always-on" in installed
+    assert "always enabled" in capsys.readouterr().out
+
+
 def test_install_shim_creates_the_game_dir_only_when_asked(tmp_path, capsys):
     root, game_dir = _make_install_root(tmp_path, config=_NO_MODS_CONFIG)
     (game_dir / "game").rmdir()
@@ -2326,6 +2344,22 @@ def test_top_level_help_is_grouped(capsys):
     assert "{games,slots" not in out          # no 33-verb soup
     assert "positional arguments" not in out
     assert "Ungrouped" not in out
+
+
+def test_cli_reference_lists_every_verb_once_under_the_help_groups():
+    """docs/CLI.md mirrors --help: same group titles in the same order, and
+    every registered verb appears exactly once as a backticked entry."""
+    import re
+    from pathlib import Path
+
+    text = (Path(cli.__file__).resolve().parents[2] / "docs" / "CLI.md").read_text(encoding="utf-8")
+    headings = re.findall(r"^## (.+)$", text, re.M)
+    assert headings == ["Global options"] + [title for title, _ in cli.COMMAND_GROUPS]
+    entries = re.findall(r"^- `([A-Za-z_-]+)", text, re.M)
+    verbs = [verb for _title, verbs in cli.COMMAND_GROUPS for verb in verbs]
+    for verb in verbs:
+        assert entries.count(verb) == 1, verb
+    assert not re.search(r"^\|", text, re.M), "no tables in CLI.md"
 
 
 def test_unknown_command_still_lists_the_valid_ones(capsys):

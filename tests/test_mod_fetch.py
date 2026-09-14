@@ -109,7 +109,7 @@ def test_built_artifact_fetches_verified_snapshot(monkeypatch, tmp_path):
     import runpy
     from pathlib import Path
     digest, _ = snapshot(monkeypatch)
-    artifact = Path(__file__).resolve().parents[1] / "vnflight.py"
+    artifact = Path(__file__).resolve().parents[1] / "dist" / "vnflight.py"
     namespace = runpy.run_path(str(artifact), run_name="vnflight_fetch_test")
     fetch = namespace["fetch_mods_manifest"]
     monkeypatch.setitem(fetch.__globals__, "_mods_download", mod_fetch._mods_download)

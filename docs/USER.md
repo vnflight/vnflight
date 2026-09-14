@@ -1,40 +1,53 @@
 # User guide
 
-Everything runs from the single-file `vnflight.py`. It reads `vnflight.json` next to it to find games and timing profiles, and it starts the bridge for you when you launch a game. This guide covers the config file, installing the shim, the CLI essentials (the full verb list is in [CLI.md](CLI.md)), the MCP server, profiles, adapters, save safety, and troubleshooting.
+Everything runs from the single-file `vnflight.py`: `dist/vnflight.py` in a clone of the repository, or `vnflight.py` in a flat release folder that holds the three release files. It reads `vnflight.json` from the project root (the clone root, or the flat folder) to find games and timing profiles, and it starts the bridge for you when you launch a game. This guide covers the config file, installing the shim, the CLI essentials (the full verb list is in [CLI.md](CLI.md)), the MCP server, profiles, adapters, save safety, and troubleshooting.
 
 ## The config file
 
-Copy `vnflight.default.json` to `vnflight.json`. The file has two top-level sections, `profiles` and `games`, plus an optional `mods_manifest` (see Adapters). A game entry:
+Copy `vnflight.default.json` to `vnflight.json`. A game needs a name and the command that starts it; that is enough to play:
 
 ```json
-"my_game": {
-  "name": "My Visual Novel",
-  "launch": "path/to/renpy-sdk/renpy.exe path/to/my_game",
-  "mods": [],
-  "default_profile": "turbo",
-  "briefing": "my_game/briefing.md",
-  "always_on": true,
-  "debug": false,
-  "debug_logs": "logs/my_game"
+{ "games":
+  { "my_game":
+    { "name": "My Visual Novel",
+      "launch": "path/to/renpy-sdk/renpy.exe path/to/my_game"
+    }
+  }
 }
 ```
 
-- `launch` is the command that starts the game: a Ren'Py SDK plus a project path, a game executable, or a Steam URL (`steam://rungameid/<appid>`). `steam_appid` / `gog_gameid` help vnflight find the running process for launcher games.
-- `default_profile` is applied right after launch (see Timing profiles).
-- `briefing` (a file path) or `briefing_text` (inline) is an optional spoiler-free text shown by `vnflight.py info <game>` and included in `vnflight.py prompt`.
-- `mods` lists the game's adapters to install alongside the shim; leave the key out to take them from the adapter manifest instead (see Adapters).
-- `always_on` records that the shim should be installed with `--always-on` (see below).
-- `debug` turns on the shim's command/action log for that game; `debug_logs` is the directory the logs go to. Both are off by default and can be overridden per launch with `launch --debug` / `--no-debug`.
+The file also carries the timing `profiles` and, at the top level, the adapter keys below.
+
+### Additional options
+
+- `"launch"`\
+  One of: a Ren'Py SDK plus a project directory (`renpy.exe path/to/game`), a game executable, `steam://rungameid/<appid>`, or `goggalaxy://launchGame/<id>`. Relative paths are relative to `vnflight.json`; for the two store forms the id in the URL is how vnflight finds the installed game and its process.
+- `"game_dir": "path/to/installed/game"`\
+  Where a launcher-started game is installed, so `install-shim` knows which `game/` folder to patch when `launch` is a store URL.
+- `"always_on": true`\
+  Install the always-on shim and expect it in the stale-shim check; needed for Steam, GOG Galaxy and other launcher-started games, which never see vnflight's environment. The older `"install_shim_flags": ["--always-on"]` still works.
+- `"default_profile": "turbo"`\
+  A timing profile applied right after launch (see Timing profiles).
+- `"briefing": "path/to/briefing.md"` or `"briefing_text": "..."`\
+  Spoiler-free text shown by `info <game>` and included in `prompt <game>`.
+- `"mods": [ { "source": "path/to/adapter.rpy", "target": "vnf_name.rpy" } ]`\
+  An explicit adapter list, which wins over the manifest; an empty list means no adapters. Leave the key out to take the adapters from the manifest entry for the game id (`"adapters": "<other id>"` reuses another entry's).
+- `"debug": true` / `"debug_logs": "logs/my_game"`\
+  Turn on the shim's command/action log for the game, and where the log files go. Both off by default; `launch --debug` / `--no-debug` override per launch.
+- `"mods_manifest": "path/to/mods/manifest.json"` (top level)\
+  The adapter manifest games take their adapters from; see Adapters.
+- `"mods_snapshot": { "url": ..., "sha256": ... }` (top level)\
+  The pinned snapshot `fetch-mods` downloads when run without arguments; see Adapters.
 
 ## Installing the shim
 
 ```bash
-python vnflight.py install-shim my_game              # shim + the game's adapters
-python vnflight.py install-shim my_game --always-on  # for Steam/GOG/launcher games
-python vnflight.py install-shim my_game --no-mods    # core shim only
+python dist/vnflight.py install-shim my_game              # shim + the game's adapters
+python dist/vnflight.py install-shim my_game --always-on  # for Steam/GOG/launcher games
+python dist/vnflight.py install-shim my_game --no-mods    # core shim only
 ```
 
-This copies `vnflight.rpy` (and each configured adapter, under a `vnf_*.rpy` name) into the game's `game/` directory. It asks for confirmation; the global `--yes` (before the verb: `python vnflight.py --yes install-shim my_game`) skips the prompt. A target without a `game/` directory is refused, since that almost always means the path in `vnflight.json` is wrong; `--create-game-dir` overrides that for a game laid out differently. Relative paths in a game's `launch` are resolved against `vnflight.json`, never against the directory you run the command from. `install-shim` always prints text, even with `--json`.
+This copies `vnflight.rpy` (and each configured adapter, under a `vnf_*.rpy` name) into the game's `game/` directory. It asks for confirmation; the global `--yes` (before the verb: `python dist/vnflight.py --yes install-shim my_game`) skips the prompt. A target without a `game/` directory is refused, since that almost always means the path in `vnflight.json` is wrong; `--create-game-dir` overrides that for a game laid out differently. Relative paths in a game's `launch` are resolved against `vnflight.json`, never against the directory you run the command from. `install-shim` always prints text, even with `--json`.
 
 The installed shim is inert during normal play. It activates only when the game is started with `VNFLIGHT_ENABLED=1` in its environment, which `vnflight.py launch` sets for games it starts directly, or when it was installed with `--always-on`, which patches the copy to be active unconditionally. Use `--always-on` for games that Steam, GOG Galaxy or another launcher starts, since those never see the launcher's environment.
 
@@ -44,7 +57,7 @@ Reinstall after every update of `vnflight.rpy` or an adapter, then restart the g
 
 ## CLI
 
-`python vnflight.py <verb> [options]`. Global options go before the verb: `--json` for structured output, `--slot <slot-or-game_id>` when more than one game is running, `--bridge <url>` (default `http://127.0.0.1:8385`), `--quiet`, `--yes`.
+`python dist/vnflight.py <verb> [options]`. Global options go before the verb: `--json` for structured output, `--slot <slot-or-game_id>` when more than one game is running, `--bridge <url>` (default `http://127.0.0.1:8385`), `--quiet`, `--yes`.
 
 The verbs you need to play a game:
 
@@ -70,10 +83,10 @@ Every other verb (navigation such as `back`, `advance`, `rewind`; setup such as 
 ## MCP server
 
 ```bash
-python vnflight.py mcp --game my_game
+python dist/vnflight.py mcp --game my_game
 ```
 
-The server speaks MCP over stdio and binds the session to a running game: launch the game first with `python vnflight.py launch my_game`, then start the server with `--game my_game`; with several games running, bind explicitly with `--slot <slot-or-game_id>`. Until a game is connected, `state` answers `status: unknown` and `act` is rejected with `state_unavailable`. `--capabilities` selects the tool set: `play` (default), `lifecycle`, `diagnostic`, `admin`, or `all`; `--tools` narrows it to an exact allowlist. The default `play` set has no `launch` or `stop`: stop the game from the CLI (`python vnflight.py stop`), or start the server with `--capabilities play,lifecycle` so the client can call `launch` (its argument is `game_id`) and `stop` itself.
+The server speaks MCP over stdio and binds the session to a running game: launch the game first with `python dist/vnflight.py launch my_game`, then start the server with `--game my_game`; with several games running, bind explicitly with `--slot <slot-or-game_id>`. Until a game is connected, `state` answers `status: unknown` and `act` is rejected with `state_unavailable`. `--capabilities` selects the tool set: `play` (default), `lifecycle`, `diagnostic`, `admin`, or `all`; `--tools` narrows it to an exact allowlist. The default `play` set has no `launch` or `stop`: stop the game from the CLI (`python dist/vnflight.py stop`), or start the server with `--capabilities play,lifecycle` so the client can call `launch` (its argument is `game_id`) and `stop` itself.
 
 Point an MCP client at it with a stdio server entry, for example:
 
@@ -101,7 +114,7 @@ Profiles in `vnflight.json` bundle the shim's delays: auto-advance and post-acti
 To download a snapshot instead of cloning the adapter repository ([vnflight/mods](https://github.com/vnflight/mods)):
 
 ```text
-python vnflight.py fetch-mods --output path/to/mods-snapshot
+python dist/vnflight.py fetch-mods --output path/to/mods-snapshot
 ```
 
 With no URL and no digest, the command uses the snapshot pinned under
@@ -114,7 +127,7 @@ snapshot from somewhere else, give both explicitly, and they win as
 written:
 
 ```text
-python vnflight.py fetch-mods https://HOST/REPO/RAW/COMMIT/manifest.json --sha256 TRUSTED_MANIFEST_SHA256 --output path/to/mods-snapshot
+python dist/vnflight.py fetch-mods https://HOST/REPO/RAW/COMMIT/manifest.json --sha256 TRUSTED_MANIFEST_SHA256 --output path/to/mods-snapshot
 ```
 
 Use an immutable commit URL and obtain the manifest digest from a trusted
@@ -137,7 +150,7 @@ Adapters are distributed separately, in the adapter repository, which carries a 
 "mods_manifest": "C:/path/to/mods/manifest.json"
 ```
 
-The path is absolute or relative to `vnflight.json`; it is never a URL. A game entry with no `mods` key then takes its adapters from the manifest entry for its id (`"adapters": "<other id>"` reuses another entry, for a second config entry of the same game). Each file is checked against its hash before anything is installed; a mismatch or a missing file refuses the whole install (shim included) and says why, so a game is never left with half its adapters. `--no-mods` installs the core shim alone if you need to play on regardless. `python vnflight.py games` shows where each game's adapters come from.
+The path is absolute or relative to `vnflight.json`; it is never a URL. A game entry with no `mods` key then takes its adapters from the manifest entry for its id (`"adapters": "<other id>"` reuses another entry, for a second config entry of the same game). Each file is checked against its hash before anything is installed; a mismatch or a missing file refuses the whole install (shim included) and says why, so a game is never left with half its adapters. `--no-mods` installs the core shim alone if you need to play on regardless. `python dist/vnflight.py games` shows where each game's adapters come from.
 
 A game entry can also map its adapters itself, and that list wins as written:
 
@@ -152,7 +165,7 @@ A game entry can also map its adapters itself, and that list wins as written:
 Ren'Py saves can pickle references to the shim's objects. Before sharing a save, or before uninstalling the shim, scan it:
 
 ```bash
-python vnflight.py save-scan path/to/save-or-directory --recursive
+python dist/vnflight.py save-scan path/to/save-or-directory --recursive
 ```
 
 The scan is read-only and reports likely `vnflight`/`vnf_` references. A clean result is a good sign, not a proof.

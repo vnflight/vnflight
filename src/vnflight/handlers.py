@@ -8493,9 +8493,15 @@ def _cli_invocation() -> "tuple[list[str], str | None]":
         return [sys.executable, str(artifact)], str(artifact.parent)
     package_dir = os.path.dirname(os.path.abspath(__file__))   # src/vnflight
     repo_root = os.path.dirname(os.path.dirname(package_dir))
-    vnflight_py = os.path.join(repo_root, "vnflight.py")
-    if os.path.exists(vnflight_py):
-        return [sys.executable, vnflight_py], repo_root
+    # The committed artifact lives in dist/; a root-level copy is the
+    # older layout, still honoured.  Either way the subprocess runs with
+    # the repo root as cwd so vnflight.json and games resolve from there.
+    for vnflight_py in (
+        os.path.join(repo_root, "dist", "vnflight.py"),
+        os.path.join(repo_root, "vnflight.py"),
+    ):
+        if os.path.exists(vnflight_py):
+            return [sys.executable, vnflight_py], repo_root
     # Installed package / bare src checkout: run the CLI module directly
     # (there is no vnflight/__main__.py, so `-m vnflight` would fail).
     return [sys.executable, "-m", "vnflight.cli"], None

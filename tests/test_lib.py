@@ -5000,3 +5000,39 @@ def test_shim_source_path_prefers_the_explicit_root_then_the_code(tmp_path):
     assert code_adjacent.name == "vnflight.rpy"
     assert code_adjacent.parent != bare
     assert shim_source_path(None) == code_adjacent
+
+
+def test_always_on_is_the_primary_spelling_and_the_flag_list_still_works():
+    from vnflight.lib import game_wants_always_on
+
+    assert game_wants_always_on({"always_on": True}) is True
+    assert game_wants_always_on({"install_shim_flags": ["--always-on"]}) is True
+    assert game_wants_always_on({"always_on": True, "install_shim_flags": []}) is True
+    assert game_wants_always_on({"always_on": False}) is False
+    assert game_wants_always_on({"always_on": "yes"}) is False   # booleans only
+    assert game_wants_always_on({"install_shim_flags": ["--no-mods"]}) is False
+    assert game_wants_always_on({"install_shim_flags": "--always-on"}) is False
+    assert game_wants_always_on({}) is False
+    assert game_wants_always_on(None) is False
+
+
+def test_project_root_resolves_from_dist_before_a_config_exists(tmp_path, monkeypatch):
+    """A fresh clone has dist/vnflight.py, vnflight.rpy and the template but
+    no vnflight.json yet; the root is still the folder with the shim."""
+    from vnflight import lib
+
+    root = tmp_path / "clone"
+    (root / "dist").mkdir(parents=True)
+    (root / "vnflight.rpy").write_text("# shim\n", encoding="utf-8")
+    (root / "vnflight.default.json").write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(lib, "__file__", str(root / "dist" / "vnflight.py"))
+
+    assert lib._find_project_root() == root
+    assert lib.shim_source_path(None) == root / "vnflight.rpy"
+
+    flat = tmp_path / "flat"
+    flat.mkdir()
+    (flat / "vnflight.rpy").write_text("# shim\n", encoding="utf-8")
+    monkeypatch.setattr(lib, "__file__", str(flat / "vnflight.py"))
+    assert lib._find_project_root() == flat
+    assert lib.shim_source_path(None) == flat / "vnflight.rpy"

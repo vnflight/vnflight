@@ -17,6 +17,10 @@ import sys
 from pathlib import Path
 
 SRC_DIR = Path(__file__).parent / "src" / "vnflight"
+# The committed artifact.  It lives in dist/ so it cannot shadow the src
+# package during tests; the release assets are the same three files
+# (vnflight.py, vnflight.rpy, vnflight.default.json) laid out flat.
+DEFAULT_OUTPUT = Path(__file__).parent / "dist" / "vnflight.py"
 
 # Modules in dependency order (later modules may import from earlier ones).
 MODULE_ORDER = [
@@ -311,12 +315,14 @@ def build(output: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build single-file vnflight.py")
-    parser.add_argument("--output", "-o", default="vnflight_built.py",
-                        help="Output file (default: vnflight_built.py)")
+    parser.add_argument("--output", "-o", default=str(DEFAULT_OUTPUT),
+                        help=f"Output file (default: {DEFAULT_OUTPUT})")
     args = parser.parse_args()
 
     print("Building vnflight single-file...", file=sys.stderr)
-    build(Path(args.output))
+    output = Path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    build(output)
     print("Done.", file=sys.stderr)
 
 
