@@ -77,6 +77,8 @@ The same file is also an MCP server over stdio. Register it with your MCP client
 
 To keep the agent to one game you start yourself, launch it from the CLI (`python dist/vnflight.py launch my_game`) and start the server with `--game my_game` instead; without `lifecycle` the agent gets only the playing tools. The tool list and the session flow are in the [user guide](docs/USER.md#mcp-server).
 
+Neither client is required. The CLI and the MCP server are thin wrappers over the same tool handlers, so a custom harness can call those handlers from Python directly and render the results its own way (see [Building your own client](docs/DEVELOPER.md#building-your-own-client)).
+
 # Supported games
 
 Compatibility depends on the game and engine version. Image-only buttons or custom screens may need an adapter from the [mods repository](https://github.com/vnflight/mods). The following games and engine versions have been played through with vnflight:
