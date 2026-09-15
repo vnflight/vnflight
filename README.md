@@ -61,6 +61,22 @@ The release assets are the same three files as the clone's essentials (`vnflight
 
 `dist/vnflight.py` is a generated single-file build of `src/vnflight/`: to change it, edit the source and run `python build_vnflight.py` (see [docs/DEVELOPER.md](docs/DEVELOPER.md)).
 
+## MCP server
+
+The same file is also an MCP server over stdio. Register it with your MCP client as a command, with the game it should play:
+
+```json
+{ "mcpServers": 
+  { "vnflight": 
+    { "command": "python",
+      "args": ["path/to/vnflight/dist/vnflight.py", "mcp", "--game", "my_game"]
+    } 
+  }
+}
+```
+
+By default the server expects the game to be running already (`python dist/vnflight.py launch my_game`) and exposes only the playing tools. Add `"--capabilities", "play,lifecycle"` to the arguments if the agent should launch and stop the game itself. The tool list and the session flow are in the [user guide](docs/USER.md#mcp-server).
+
 # Supported games
 
 Compatibility depends on the game and engine version. Image-only buttons or custom screens may need an adapter from the [mods repository](https://github.com/vnflight/mods). The following games and engine versions have been played through with vnflight:
@@ -86,7 +102,7 @@ python dist/vnflight.py state                     # footer, stats, inventory, vi
 python dist/vnflight.py stop                      # quit the game and the bridge
 ```
 
-For an MCP client, launch the game first (`python dist/vnflight.py launch my_game`), then start `python dist/vnflight.py mcp --game my_game` as a stdio server and point the client at it (see the user guide).
+An MCP client gets the same actions as tools once the server from [Quick Install](#mcp-server) is registered.
 
 # What the agent sees
 
