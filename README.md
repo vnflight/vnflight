@@ -16,8 +16,6 @@ The shim targets Ren'Py 6 through 8 (Python 2 and 3 engines). Adapters (the CLI 
 
 The project was developed mostly with the help of local and frontier AI models.
 
-Related projects: [Neuro Ren'Py Implementation](https://github.com/caheuer/neuro-renpy-implementation) is a Ren'Py mod for the [Neuro Game API](https://github.com/VedalAI/neuro-sdk), where the game pushes dialogue to a streaming AI over a WebSocket and paces it with deadlines. vnflight takes the opposite approach: the agent pulls the full screen state through a bridge and decides when to act, so it fits CLI and MCP clients rather than a single AI server.
-
 # Quick Install
 
 Requirements: Python 3.10+, a locally installed Ren'Py game, and a command that starts it. A built game (Steam, GOG, itch) starts from its own executable; a game distributed as a Ren'Py project, such as the two sample games ([Mystic Cafe](https://github.com/vnflight/mystic_cafe), [Echoes of Tomorrow](https://github.com/vnflight/echoes_of_tomorrow)), needs a Ren'Py SDK from [renpy.org](https://www.renpy.org/latest.html) and starts as `<sdk>/renpy.exe <project dir>` (`renpy.sh` on Linux and macOS). The CLI and the bridge need no third-party packages; MCP mode needs the `mcp` package, 1.x only (`pip install -r requirements.txt`, tested with mcp 1.26 to 1.30).
@@ -140,6 +138,10 @@ Story lines carry the speaker in brackets, and `wait` reads until something need
 # In-depth guide
 
 For a more in-depth guide, see [docs/USER.md](docs/USER.md) for the user-facing features and [docs/DEVELOPER.md](docs/DEVELOPER.md) for developer notes.
+
+# Related projects
+
+[Neuro Ren'Py Implementation](https://github.com/caheuer/neuro-renpy-implementation) is a Ren'Py mod for the [Neuro Game API](https://github.com/VedalAI/neuro-sdk), where the game pushes dialogue to a streaming AI over a WebSocket and paces it with deadlines. vnflight takes the opposite approach: the agent pulls the full screen state through a bridge and decides when to act, so it fits CLI and MCP clients rather than a single AI server.
 
 # License
 
