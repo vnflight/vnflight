@@ -63,19 +63,19 @@ The release assets are the same three files as the clone's essentials (`vnflight
 
 ## MCP server
 
-The same file is also an MCP server over stdio. Register it with your MCP client as a command, with the game it should play:
+The same file is also an MCP server over stdio. Register it with your MCP client as a command; with the `lifecycle` capability the agent lists the configured games, launches the one it wants, plays it and stops it, all through tools:
 
 ```json
 { "mcpServers": 
   { "vnflight": 
     { "command": "python",
-      "args": ["path/to/vnflight/dist/vnflight.py", "mcp", "--game", "my_game"]
+      "args": ["path/to/vnflight/dist/vnflight.py", "mcp", "--capabilities", "play,lifecycle"]
     } 
   }
 }
 ```
 
-By default the server expects the game to be running already (`python dist/vnflight.py launch my_game`) and exposes only the playing tools. Add `"--capabilities", "play,lifecycle"` to the arguments if the agent should launch and stop the game itself. The tool list and the session flow are in the [user guide](docs/USER.md#mcp-server).
+To keep the agent to one game you start yourself, launch it from the CLI (`python dist/vnflight.py launch my_game`) and start the server with `--game my_game` instead; without `lifecycle` the agent gets only the playing tools. The tool list and the session flow are in the [user guide](docs/USER.md#mcp-server).
 
 # Supported games
 
